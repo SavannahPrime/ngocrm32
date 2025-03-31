@@ -23,6 +23,8 @@ import Donate from "./pages/Donate";
 import Admin from "./pages/Admin";
 import AdminMembers from "./pages/admin/Members";
 import AdminSermons from "./pages/admin/Sermons";
+import AdminBlog from "./pages/admin/Blog";
+import AdminEvents from "./pages/admin/Events";
 import AdminEmployees from "./pages/admin/Employees";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/AdminLogin";
@@ -57,7 +59,9 @@ const App = () => (
               <Route path="/admin" element={<Admin />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="members" element={<AdminMembers />} />
+                <Route path="blog" element={<AdminBlog />} />
                 <Route path="sermons" element={<AdminSermons />} />
+                <Route path="events" element={<AdminEvents />} />
                 <Route path="employees" element={<AdminEmployees />} />
               </Route>
               <Route path="*" element={<NotFound />} />

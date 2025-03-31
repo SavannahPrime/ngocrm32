@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Heading } from "@/components/ui/heading";
 
 // Define the sermon/blog post type
-interface Sermon {
+interface BlogPost {
   id: string;
   title: string;
   preacher: string;
@@ -20,25 +20,38 @@ interface Sermon {
   image_url?: string;
   featured: boolean;
   tags: string[];
+  type?: string;
 }
 
 const Blog = () => {
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<Sermon[]>([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true);
-        // For now, we're using the sermons table as blog posts
         const { data, error } = await supabase
           .from('sermons')
           .select('*')
+          .eq('type', 'blog')
           .order('date', { ascending: false });
           
         if (error) throw error;
         
         setPosts(data || []);
+
+        // If no posts with type 'blog' are found, fetch all posts for backward compatibility
+        if (!data || data.length === 0) {
+          const { data: allData, error: allError } = await supabase
+            .from('sermons')
+            .select('*')
+            .order('date', { ascending: false });
+            
+          if (allError) throw allError;
+          
+          setPosts(allData || []);
+        }
       } catch (error) {
         console.error("Error fetching blog posts:", error);
       } finally {
