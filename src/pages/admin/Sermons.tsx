@@ -1,5 +1,5 @@
+
 import { useState } from "react";
-import { useChurch } from "@/contexts/ChurchContext";
 import { 
   Card, 
   CardContent, 
@@ -33,14 +33,61 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+
+// Define the sermon type
+interface Sermon {
+  id: string;
+  title: string;
+  preacher: string;
+  date: string;
+  scripture: string;
+  content: string;
+  video_url?: string;
+  image_url?: string;
+  featured: boolean;
+  tags: string[];
+  created_at?: string;
+  updated_at?: string;
+}
 
 const AdminSermons = () => {
-  const { sermons, addSermon, updateSermon, deleteSermon, isLoading } = useChurch();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSermonId, setSelectedSermonId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sermons, setSermons] = useState<Sermon[]>([]);
+  
+  // Fetch sermons on component mount
+  useEffect(() => {
+    fetchSermons();
+  }, []);
+
+  // Fetch sermons from Supabase
+  const fetchSermons = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sermons')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (error) throw error;
+      
+      setSermons(data || []);
+    } catch (error: any) {
+      console.error("Error fetching sermons:", error);
+      toast({
+        title: "Error Loading Sermons",
+        description: error.message || "There was an error loading sermons.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const [formData, setFormData] = useState({
     title: "",
@@ -85,6 +132,7 @@ const AdminSermons = () => {
     e.preventDefault();
     
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('sermons')
         .insert([
@@ -109,22 +157,7 @@ const AdminSermons = () => {
         description: "The sermon has been successfully added.",
       });
       
-      // Let the ChurchContext know about the change
-      if (data && data[0]) {
-        addSermon({
-          id: data[0].id,
-          title: data[0].title,
-          preacher: data[0].preacher,
-          date: data[0].date,
-          scripture: data[0].scripture,
-          content: data[0].content,
-          videoUrl: data[0].video_url || "",
-          imageUrl: data[0].image_url || "",
-          featured: data[0].featured || false,
-          tags: data[0].tags || [],
-        });
-      }
-      
+      fetchSermons(); // Refresh the list
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error: any) {
@@ -134,6 +167,8 @@ const AdminSermons = () => {
         description: error.message || "There was an error adding the sermon. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -147,8 +182,8 @@ const AdminSermons = () => {
         date: sermon.date,
         scripture: sermon.scripture,
         content: sermon.content,
-        videoUrl: sermon.videoUrl || "",
-        imageUrl: sermon.imageUrl || "",
+        videoUrl: sermon.video_url || "",
+        imageUrl: sermon.image_url || "",
         featured: sermon.featured,
         tags: sermon.tags.join(", "),
       });
@@ -162,6 +197,7 @@ const AdminSermons = () => {
     if (!selectedSermonId) return;
     
     try {
+      setIsLoading(true);
       const { error } = await supabase
         .from('sermons')
         .update({
@@ -185,19 +221,7 @@ const AdminSermons = () => {
         description: "The sermon has been successfully updated.",
       });
       
-      // Let the ChurchContext know about the change
-      updateSermon(selectedSermonId, {
-        title: formData.title,
-        preacher: formData.preacher,
-        date: formData.date,
-        scripture: formData.scripture,
-        content: formData.content,
-        videoUrl: formData.videoUrl,
-        imageUrl: formData.imageUrl,
-        featured: formData.featured,
-        tags: formData.tags.split(",").map(tag => tag.trim()),
-      });
-      
+      fetchSermons(); // Refresh the list
       setIsEditDialogOpen(false);
       resetForm();
       setSelectedSermonId(null);
@@ -208,6 +232,8 @@ const AdminSermons = () => {
         description: error.message || "There was an error updating the sermon. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -219,6 +245,7 @@ const AdminSermons = () => {
   const handleDelete = async () => {
     if (selectedSermonId) {
       try {
+        setIsLoading(true);
         const { error } = await supabase
           .from('sermons')
           .delete()
@@ -231,9 +258,7 @@ const AdminSermons = () => {
           description: "The sermon has been successfully deleted.",
         });
         
-        // Let the ChurchContext know about the change
-        deleteSermon(selectedSermonId);
-        
+        fetchSermons(); // Refresh the list
         setIsDeleteDialogOpen(false);
         setSelectedSermonId(null);
       } catch (error: any) {
@@ -243,6 +268,8 @@ const AdminSermons = () => {
           description: error.message || "There was an error deleting the sermon. Please try again.",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -250,17 +277,17 @@ const AdminSermons = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Sermon Management</h1>
+        <h1 className="text-2xl font-bold">Sermon & Blog Management</h1>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add Sermon
+              Add Sermon / Blog Post
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add New Sermon</DialogTitle>
+              <DialogTitle>Add New Sermon / Blog Post</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,7 +302,7 @@ const AdminSermons = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="preacher">Preacher</Label>
+                  <Label htmlFor="preacher">Author / Preacher</Label>
                   <Input 
                     id="preacher" 
                     name="preacher" 
@@ -311,7 +338,7 @@ const AdminSermons = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="content">Sermon Content</Label>
+                <Label htmlFor="content">Content</Label>
                 <Textarea 
                   id="content" 
                   name="content" 
@@ -360,7 +387,7 @@ const AdminSermons = () => {
                   checked={formData.featured} 
                   onCheckedChange={handleCheckboxChange} 
                 />
-                <Label htmlFor="featured">Feature this sermon on homepage</Label>
+                <Label htmlFor="featured">Feature this on homepage</Label>
               </div>
               
               <div className="flex justify-end gap-2">
@@ -372,7 +399,7 @@ const AdminSermons = () => {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Adding..." : "Add Sermon"}
+                  {isLoading ? "Adding..." : "Add"}
                 </Button>
               </div>
             </form>
@@ -382,76 +409,82 @@ const AdminSermons = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle>All Sermons</CardTitle>
+          <CardTitle>All Sermons & Blog Posts</CardTitle>
           <CardDescription>
-            Manage all sermons in the system
+            Manage all sermons and blog posts in the system
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Preacher</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Scripture</TableHead>
-                <TableHead>Featured</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sermons.length === 0 ? (
+          {isLoading && sermons.length === 0 ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-church-primary"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">
-                    No sermons available.
-                  </TableCell>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Author/Preacher</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Scripture</TableHead>
+                  <TableHead>Featured</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                sermons.map((sermon) => (
-                  <TableRow key={sermon.id}>
-                    <TableCell className="font-medium">{sermon.title}</TableCell>
-                    <TableCell>{sermon.preacher}</TableCell>
-                    <TableCell>{format(new Date(sermon.date), "MMM d, yyyy")}</TableCell>
-                    <TableCell>{sermon.scripture}</TableCell>
-                    <TableCell>
-                      {sermon.featured ? (
-                        <Badge>Featured</Badge>
-                      ) : (
-                        <span className="text-gray-500">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => handleEditOpen(sermon.id)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteOpen(sermon.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                          {sermon.videoUrl && (
-                            <DropdownMenuItem
-                              onClick={() => window.open(sermon.videoUrl, "_blank")}
-                            >
-                              <Video className="mr-2 h-4 w-4" />
-                              View Video
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {sermons.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center">
+                      No entries available.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  sermons.map((sermon) => (
+                    <TableRow key={sermon.id}>
+                      <TableCell className="font-medium">{sermon.title}</TableCell>
+                      <TableCell>{sermon.preacher}</TableCell>
+                      <TableCell>{format(new Date(sermon.date), "MMM d, yyyy")}</TableCell>
+                      <TableCell>{sermon.scripture}</TableCell>
+                      <TableCell>
+                        {sermon.featured ? (
+                          <Badge>Featured</Badge>
+                        ) : (
+                          <span className="text-gray-500">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleEditOpen(sermon.id)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteOpen(sermon.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                            {sermon.video_url && (
+                              <DropdownMenuItem
+                                onClick={() => window.open(sermon.video_url, "_blank")}
+                              >
+                                <Video className="mr-2 h-4 w-4" />
+                                View Video
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       
@@ -459,7 +492,7 @@ const AdminSermons = () => {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Sermon</DialogTitle>
+            <DialogTitle>Edit Sermon / Blog Post</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -474,7 +507,7 @@ const AdminSermons = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-preacher">Preacher</Label>
+                <Label htmlFor="edit-preacher">Author/Preacher</Label>
                 <Input 
                   id="edit-preacher" 
                   name="preacher" 
@@ -510,7 +543,7 @@ const AdminSermons = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="edit-content">Sermon Content</Label>
+              <Label htmlFor="edit-content">Content</Label>
               <Textarea 
                 id="edit-content" 
                 name="content" 
@@ -559,7 +592,7 @@ const AdminSermons = () => {
                 checked={formData.featured} 
                 onCheckedChange={handleCheckboxChange} 
               />
-              <Label htmlFor="edit-featured">Feature this sermon on homepage</Label>
+              <Label htmlFor="edit-featured">Feature this on homepage</Label>
             </div>
             
             <div className="flex justify-end gap-2">
@@ -571,7 +604,7 @@ const AdminSermons = () => {
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Updating..." : "Update Sermon"}
+                {isLoading ? "Updating..." : "Update"}
               </Button>
             </div>
           </form>
@@ -584,7 +617,7 @@ const AdminSermons = () => {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete the sermon: <span className="font-semibold">{selectedSermon?.title}</span>?</p>
+          <p>Are you sure you want to delete: <span className="font-semibold">{selectedSermon?.title}</span>?</p>
           <p className="text-red-500 text-sm">This action cannot be undone.</p>
           <div className="flex justify-end gap-2 mt-4">
             <Button

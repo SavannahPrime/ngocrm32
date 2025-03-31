@@ -1,5 +1,4 @@
 
-import { useChurch } from "@/contexts/ChurchContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
@@ -9,17 +8,29 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Heading } from "@/components/ui/heading";
 
+// Define the sermon/blog post type
+interface Sermon {
+  id: string;
+  title: string;
+  preacher: string;
+  date: string;
+  scripture: string;
+  content: string;
+  video_url?: string;
+  image_url?: string;
+  featured: boolean;
+  tags: string[];
+}
+
 const Blog = () => {
-  const { blogPosts } = useChurch();
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Sermon[]>([]);
 
   useEffect(() => {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true);
         // For now, we're using the sermons table as blog posts
-        // In the future, you may want to create a separate blog_posts table
         const { data, error } = await supabase
           .from('sermons')
           .select('*')
