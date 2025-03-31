@@ -1,245 +1,331 @@
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Upload, Link, Youtube } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Upload, Link, Image as ImageIcon, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isYouTubeUrl, isGoogleDriveUrl, getYouTubeEmbedUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
+import { toast } from "sonner";
 
 interface MediaUploadProps {
   type: "image" | "video";
-  value?: string | null;
+  value: string;
   onChange: (url: string) => void;
 }
 
-export function MediaUpload({ type, value, onChange }: MediaUploadProps) {
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("url");
   const [urlInput, setUrlInput] = useState(value || "");
-  const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("upload");
-  
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  // Update URL input when value prop changes
+  useEffect(() => {
+    setUrlInput(value || "");
+  }, [value]);
+
+  // Update preview when URL input or file changes
+  useEffect(() => {
+    if (file) {
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    } else if (urlInput) {
+      if (type === "video") {
+        if (isYouTubeUrl(urlInput)) {
+          setPreview(getYouTubeEmbedUrl(urlInput) || "");
+        } else if (isGoogleDriveUrl(urlInput)) {
+          setPreview(getGoogleDriveEmbedUrl(urlInput) || "");
+        } else {
+          setPreview(urlInput);
+        }
+      } else {
+        setPreview(urlInput);
+      }
+    } else {
+      setPreview(null);
+    }
+  }, [file, urlInput, type]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    
+    if (selectedFile) {
+      // Check if file type matches the expected type
+      if (type === "image" && !selectedFile.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+      if (type === "video" && !selectedFile.type.startsWith("video/")) {
+        toast.error("Please select a video file");
+        return;
+      }
+      
+      setFile(selectedFile);
+    }
+  };
+
+  const handleUpload = async () => {
     if (!file) return;
     
-    // Validate file type
-    if (type === "image" && !file.type.startsWith("image/")) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Please upload an image file (JPEG, PNG, GIF, etc.)",
-      });
-      return;
-    }
-    
-    if (type === "video" && !file.type.startsWith("video/")) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Please upload a video file (MP4, WebM, etc.)",
-      });
-      return;
-    }
-    
     try {
-      setIsUploading(true);
+      setUploading(true);
       
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
+      // Generate a unique file name to prevent conflicts
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${type}s/${fileName}`;
+      const filePath = `${type === "image" ? "images" : "videos"}/${fileName}`;
       
-      // Upload to Supabase storage
+      // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
-        .from('blog-assets')
+        .from("blog-assets")
         .upload(filePath, file);
         
       if (error) throw error;
       
-      // Get the public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('blog-assets')
+      // Get public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from("blog-assets")
         .getPublicUrl(filePath);
-        
-      onChange(publicUrlData.publicUrl);
       
-      toast({
-        title: "File uploaded",
-        description: `${type === "image" ? "Image" : "Video"} has been uploaded successfully.`,
-      });
-    } catch (error: any) {
-      console.error(`Error uploading ${type}:`, error);
-      toast({
-        variant: "destructive",
-        title: `Failed to upload ${type}`,
-        description: error.message || "Please try again later.",
-      });
+      onChange(publicUrl);
+      setUrlInput(publicUrl);
+      toast.success("File uploaded successfully");
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload file. Please try again.");
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
   };
-  
+
   const handleUrlSubmit = () => {
-    if (!urlInput.trim()) {
-      toast({
-        variant: "destructive",
-        title: "URL is required",
-        description: "Please enter a valid URL",
-      });
-      return;
-    }
+    if (!urlInput) return;
     
-    // Check if it's a YouTube or Google Drive link for videos
-    if (type === "video") {
-      if (isYouTubeUrl(urlInput)) {
-        const embedUrl = getYouTubeEmbedUrl(urlInput);
-        if (embedUrl) {
-          onChange(embedUrl);
-          toast({
-            title: "YouTube video added",
-            description: "The YouTube video has been added successfully.",
-          });
-          return;
-        }
-      } else if (isGoogleDriveUrl(urlInput)) {
-        const embedUrl = getGoogleDriveEmbedUrl(urlInput);
-        if (embedUrl) {
-          onChange(embedUrl);
-          toast({
-            title: "Google Drive video added",
-            description: "The Google Drive video has been added successfully.",
-          });
-          return;
-        }
-      }
+    // Validate URL format
+    try {
+      new URL(urlInput);
+      onChange(urlInput);
+      setIsOpen(false);
+    } catch (e) {
+      toast.error("Please enter a valid URL");
     }
-    
-    // For regular URLs (images or direct video links)
-    onChange(urlInput);
-    toast({
-      title: `${type === "image" ? "Image" : "Video"} URL added`,
-      description: `The ${type} URL has been added successfully.`,
-    });
   };
-  
+
+  const handleRemove = () => {
+    onChange("");
+    setUrlInput("");
+    setFile(null);
+    setPreview(null);
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Reset file and URL input when switching tabs
+    if (value === "upload") {
+      setUrlInput("");
+    } else {
+      setFile(null);
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 w-full">
-          <TabsTrigger value="upload">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload {type === "image" ? "Image" : "Video"}
-          </TabsTrigger>
-          <TabsTrigger value="url">
-            <Link className="mr-2 h-4 w-4" />
-            {type === "video" ? "Video URL / Embed" : "Image URL"}
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="upload" className="pt-4">
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer" 
-              onClick={() => fileInputRef.current?.click()}>
-              <Upload className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">
-                Click to upload or drag and drop<br />
-                {type === "image" ? "PNG, JPG or GIF" : "MP4, WebM or other video formats"}
-              </p>
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept={type === "image" ? "image/*" : "video/*"}
-                onChange={handleFileUpload}
-                disabled={isUploading}
+    <div className="space-y-2">
+      {value ? (
+        <div className="border rounded-md p-3 space-y-3">
+          <div className="aspect-video relative bg-gray-100 rounded-md overflow-hidden">
+            {type === "image" ? (
+              <img 
+                src={value} 
+                alt="Preview" 
+                className="w-full h-full object-contain" 
               />
-            </div>
-            
-            {isUploading && (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-church-primary"></div>
-              </div>
-            )}
-            
-            {value && type === "image" && (
-              <div className="mt-4">
-                <p className="text-sm mb-2">Current image:</p>
-                <div className="rounded-md overflow-hidden max-h-48">
-                  <img src={value} alt="Current" className="w-full h-auto object-cover" />
-                </div>
-              </div>
-            )}
-            
-            {value && type === "video" && !isYouTubeUrl(value) && !isGoogleDriveUrl(value) && (
-              <div className="mt-4">
-                <p className="text-sm mb-2">Current video:</p>
-                <div className="rounded-md overflow-hidden">
-                  <video src={value} controls className="w-full h-auto max-h-48" />
-                </div>
-              </div>
+            ) : (
+              isYouTubeUrl(value) || isGoogleDriveUrl(value) ? (
+                <iframe 
+                  src={preview || ""} 
+                  className="w-full h-full" 
+                  allowFullScreen
+                  title="Video preview"
+                  frameBorder="0"
+                />
+              ) : (
+                <video 
+                  src={value} 
+                  controls 
+                  className="w-full h-full object-contain"
+                />
+              )
             )}
           </div>
-        </TabsContent>
-        
-        <TabsContent value="url" className="pt-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={`${type}-url`}>
-                {type === "video" ? "Video URL (YouTube, Google Drive, or direct link)" : "Image URL"}
-              </Label>
-              <div className="flex space-x-2">
-                <Input
-                  id={`${type}-url`}
-                  placeholder={type === "video" 
-                    ? "https://youtube.com/watch?v=... or https://drive.google.com/..." 
-                    : "https://example.com/image.jpg"}
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                />
-                <Button onClick={handleUrlSubmit}>Add</Button>
-              </div>
-              
-              {type === "video" && (
-                <div className="flex items-center mt-2 text-sm text-gray-500">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  <span>Supports YouTube, Google Drive, and direct video links</span>
-                </div>
-              )}
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-500 truncate max-w-[180px]">
+              {value}
             </div>
-            
-            {value && type === "image" && (
-              <div className="mt-4">
-                <p className="text-sm mb-2">Current image:</p>
-                <div className="rounded-md overflow-hidden max-h-48">
-                  <img src={value} alt="Current" className="w-full h-auto object-cover" />
-                </div>
-              </div>
-            )}
-            
-            {value && type === "video" && (
-              <div className="mt-4">
-                <p className="text-sm mb-2">Current video:</p>
-                <div className="rounded-md overflow-hidden">
-                  {isYouTubeUrl(value) || isGoogleDriveUrl(value) ? (
-                    <iframe 
-                      src={value} 
-                      allowFullScreen 
-                      className="w-full aspect-video rounded-md"
-                    />
-                  ) : (
-                    <video src={value} controls className="w-full h-auto max-h-48" />
+            <div className="flex gap-2">
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">Change</Button>
+                </SheetTrigger>
+                {/* Sheet content below */}
+              </Sheet>
+              <Button variant="outline" size="sm" onClick={handleRemove}>Remove</Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full h-32 flex flex-col gap-2">
+              {type === "image" ? (
+                <ImageIcon className="h-6 w-6" />
+              ) : (
+                <Video className="h-6 w-6" />
+              )}
+              <span>Add {type === "image" ? "Image" : "Video"}</span>
+            </Button>
+          </SheetTrigger>
+          {/* Sheet content below */}
+        </Sheet>
+      )}
+
+      {/* Common Sheet Content for both states */}
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Add {type === "image" ? "Image" : "Video"}</SheetTitle>
+            <SheetDescription>
+              Upload a file or enter a URL for your {type === "image" ? "image" : "video"}.
+              {type === "video" && " You can also use YouTube or Google Drive links."}
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="py-6">
+            <Tabs 
+              defaultValue={activeTab} 
+              onValueChange={handleTabChange}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="url">URL</TabsTrigger>
+                <TabsTrigger value="upload">Upload</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="url" className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="url">Enter {type === "image" ? "image" : "video"} URL</Label>
+                  <Input
+                    id="url"
+                    type="text"
+                    placeholder={`Enter ${type === "image" ? "image" : "video"} URL`}
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                  />
+                  {type === "video" && (
+                    <p className="text-xs text-gray-500">
+                      You can use direct video URLs, YouTube, or Google Drive links.
+                    </p>
                   )}
                 </div>
-              </div>
-            )}
+                
+                {preview && (
+                  <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                    {type === "image" ? (
+                      <img 
+                        src={preview} 
+                        alt="Preview" 
+                        className="w-full h-full object-contain" 
+                      />
+                    ) : (
+                      isYouTubeUrl(urlInput) || isGoogleDriveUrl(urlInput) ? (
+                        <iframe 
+                          src={preview} 
+                          className="w-full h-full" 
+                          allowFullScreen
+                          title="Video preview"
+                          frameBorder="0"
+                        />
+                      ) : (
+                        <video 
+                          src={preview} 
+                          controls 
+                          className="w-full h-full object-contain"
+                        />
+                      )
+                    )}
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={handleUrlSubmit} 
+                  className="w-full"
+                  disabled={!urlInput}
+                >
+                  <Link className="mr-2 h-4 w-4" />
+                  Use URL
+                </Button>
+              </TabsContent>
+              
+              <TabsContent value="upload" className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="upload">
+                    Upload {type === "image" ? "image" : "video"}
+                  </Label>
+                  <Input
+                    id="upload"
+                    type="file"
+                    accept={type === "image" ? "image/*" : "video/*"}
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                  />
+                </div>
+                
+                {preview && (
+                  <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                    {type === "image" ? (
+                      <img 
+                        src={preview} 
+                        alt="Preview" 
+                        className="w-full h-full object-contain" 
+                      />
+                    ) : (
+                      <video 
+                        src={preview} 
+                        controls 
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={handleUpload} 
+                  className="w-full"
+                  disabled={!file || uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+              </TabsContent>
+            </Tabs>
           </div>
-        </TabsContent>
-      </Tabs>
+        </SheetContent>
+      </Sheet>
     </div>
   );
-}
+};

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -35,10 +34,11 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { SermonType } from "@/types/supabase";
 import { MediaUpload } from "@/components/MediaUpload";
+import { toast } from "sonner";
 
 // Update component using our temporary type
 const AdminBlog = () => {
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [blogPosts, setBlogPosts] = useState<SermonType[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -74,9 +74,10 @@ const AdminBlog = () => {
       if (error) throw error;
       
       setBlogPosts(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching blog posts:", error);
-      toast({
+      toast.error("Failed to load blog posts");
+      uiToast({
         variant: "destructive",
         title: "Error",
         description: "Failed to load blog posts. Please try again.",
@@ -121,7 +122,7 @@ const AdminBlog = () => {
   const handleAddBlogPost = async () => {
     try {
       if (!formData.title || !formData.preacher || !formData.content || !formData.scripture) {
-        toast({
+        uiToast({
           variant: "destructive",
           title: "Missing Information",
           description: "Please fill in all required fields.",
@@ -149,7 +150,8 @@ const AdminBlog = () => {
         
       if (error) throw error;
       
-      toast({
+      toast.success("Blog post added successfully");
+      uiToast({
         title: "Success",
         description: "Blog post has been added successfully!",
       });
@@ -171,7 +173,8 @@ const AdminBlog = () => {
       fetchBlogPosts();
     } catch (error: any) {
       console.error("Error adding blog post:", error);
-      toast({
+      toast.error("Failed to add blog post");
+      uiToast({
         variant: "destructive",
         title: "Error",
         description: `Failed to add blog post: ${error.message}`,
@@ -185,7 +188,7 @@ const AdminBlog = () => {
       if (!selectedPost) return;
       
       if (!formData.title || !formData.preacher || !formData.content || !formData.scripture) {
-        toast({
+        uiToast({
           variant: "destructive",
           title: "Missing Information",
           description: "Please fill in all required fields.",
@@ -214,7 +217,8 @@ const AdminBlog = () => {
         
       if (error) throw error;
       
-      toast({
+      toast.success("Blog post updated successfully");
+      uiToast({
         title: "Success",
         description: "Blog post has been updated successfully!",
       });
@@ -224,7 +228,8 @@ const AdminBlog = () => {
       fetchBlogPosts();
     } catch (error: any) {
       console.error("Error updating blog post:", error);
-      toast({
+      toast.error("Failed to update blog post");
+      uiToast({
         variant: "destructive",
         title: "Error",
         description: `Failed to update blog post: ${error.message}`,
@@ -244,7 +249,8 @@ const AdminBlog = () => {
         
       if (error) throw error;
       
-      toast({
+      toast.success("Blog post deleted successfully");
+      uiToast({
         title: "Success",
         description: "Blog post has been deleted successfully!",
       });
@@ -254,7 +260,8 @@ const AdminBlog = () => {
       fetchBlogPosts();
     } catch (error: any) {
       console.error("Error deleting blog post:", error);
-      toast({
+      toast.error("Failed to delete blog post");
+      uiToast({
         variant: "destructive",
         title: "Error",
         description: `Failed to delete blog post: ${error.message}`,

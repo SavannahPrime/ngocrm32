@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Heading } from "@/components/ui/heading";
 import { SermonType } from "@/types/supabase";
+import { toast } from "sonner";
 
 const Blog = () => {
   const [loading, setLoading] = useState(true);
@@ -34,12 +35,16 @@ const Blog = () => {
             .select('*')
             .order('date', { ascending: false });
             
-          if (allError) throw allError;
+          if (allError) {
+            toast.error("Error fetching blog posts");
+            throw allError;
+          }
           
           setPosts(allData || []);
         }
       } catch (error) {
         console.error("Error fetching blog posts:", error);
+        toast.error("Failed to load blog posts");
       } finally {
         setLoading(false);
       }

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SermonType, isYouTubeUrl, isGoogleDriveUrl } from "@/types/supabase";
+import { SermonType, getYouTubeEmbedUrl, isYouTubeUrl, isGoogleDriveUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,6 +61,16 @@ const BlogPost = () => {
       </div>
     );
   }
+
+  // Determine proper embed URL for videos
+  const getEmbedUrl = (url: string): string | null => {
+    if (isYouTubeUrl(url)) {
+      return getYouTubeEmbedUrl(url);
+    } else if (isGoogleDriveUrl(url)) {
+      return getGoogleDriveEmbedUrl(url);
+    }
+    return url;
+  };
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
@@ -119,7 +129,7 @@ const BlogPost = () => {
             {isYouTubeUrl(post.video_url) || isGoogleDriveUrl(post.video_url) ? (
               <div className="aspect-video">
                 <iframe 
-                  src={post.video_url} 
+                  src={getEmbedUrl(post.video_url) || ''} 
                   className="w-full h-full" 
                   allowFullScreen
                   title="Embedded video"
