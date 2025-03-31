@@ -14,6 +14,7 @@ interface ChurchContextType {
   addMember: (member: Partial<MemberType>) => Promise<boolean>;
   getFeaturedSermons: () => SermonType[];
   getFeaturedEvents: () => EventType[];
+  getFeaturedBlogPosts: () => SermonType[];
   isLoading: boolean;
 }
 
@@ -53,7 +54,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (tribesError) throw tribesError;
-      setTribes(tribesData || []);
+      setTribes(tribesData as TribeType[] || []);
       
       // Fetch members
       const { data: membersData, error: membersError } = await supabase
@@ -62,7 +63,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (membersError) throw membersError;
-      setMembers(membersData || []);
+      setMembers(membersData as MemberType[] || []);
       
       // Fetch leaders
       const { data: leadersData, error: leadersError } = await supabase
@@ -71,7 +72,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (leadersError) throw leadersError;
-      setLeaders(leadersData || []);
+      setLeaders(leadersData as LeaderType[] || []);
       
       // Fetch sermons
       const { data: sermonsData, error: sermonsError } = await supabase
@@ -81,7 +82,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('date', { ascending: false });
       
       if (sermonsError) throw sermonsError;
-      setSermons(sermonsData || []);
+      setSermons(sermonsData as SermonType[] || []);
       
       // Fetch events
       const { data: eventsData, error: eventsError } = await supabase
@@ -90,7 +91,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('date', { ascending: true });
       
       if (eventsError) throw eventsError;
-      setEvents(eventsData || []);
+      setEvents(eventsData as EventType[] || []);
       
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -116,8 +117,8 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
       
       // If birth date is provided, try to auto-assign tribe based on month
       if (member.birth_date && !member.tribe_id && tribes.length > 0) {
-        const month = new Date(member.birth_date).getMonth();
-        const matchingTribe = tribes[month];
+        const tribeName = getTribeFromBirthDate(member.birth_date);
+        const matchingTribe = tribes.find(t => t.name === tribeName);
         if (matchingTribe) {
           member.tribe_id = matchingTribe.id;
         }
@@ -130,7 +131,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) throw error;
       
-      setMembers(prev => [...prev, data[0]]);
+      setMembers(prev => [...prev, data[0] as MemberType]);
       
       toast({
         title: "Success",
@@ -161,6 +162,11 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
     return events.filter(event => event.featured);
   };
 
+  // Get featured blog posts
+  const getFeaturedBlogPosts = (): SermonType[] => {
+    return sermons.filter(sermon => sermon.featured && sermon.type === 'blog');
+  };
+
   const value = {
     members,
     tribes,
@@ -170,6 +176,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
     addMember,
     getFeaturedSermons,
     getFeaturedEvents,
+    getFeaturedBlogPosts,
     isLoading
   };
 

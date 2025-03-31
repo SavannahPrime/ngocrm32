@@ -7,7 +7,7 @@ import { Users, BookOpen, Calendar, DollarSign, TrendingUp, UserPlus, UserCheck 
 import { Progress } from "@/components/ui/progress";
 
 const AdminDashboard = () => {
-  const { members, sermons, events, blogPosts } = useChurch();
+  const { members, sermons, events, tribes } = useChurch();
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({
     totalMembers: 0,
@@ -25,11 +25,12 @@ const AdminDashboard = () => {
 
   // Calculate dashboard stats
   useEffect(() => {
-    const activeMembers = members.filter(member => member.active).length;
+    const activeMembers = members.filter(member => member.is_active).length;
     
     const membersByTribe: Record<string, number> = {};
     members.forEach(member => {
-      membersByTribe[member.tribe] = (membersByTribe[member.tribe] || 0) + 1;
+      const tribe = tribes.find(t => t.id === member.tribe_id)?.name || 'Unassigned';
+      membersByTribe[tribe] = (membersByTribe[tribe] || 0) + 1;
     });
     
     // Generate mock attendance data for the last 4 weeks
@@ -41,11 +42,14 @@ const AdminDashboard = () => {
       members.length * 0.85
     ].map(Math.round);
     
+    // Count blog posts
+    const blogPosts = sermons.filter(sermon => sermon.type === 'blog');
+    
     setStats({
       totalMembers: members.length,
       activeMembers,
       inactiveMembers: members.length - activeMembers,
-      totalSermons: sermons.length,
+      totalSermons: sermons.filter(sermon => sermon.type === 'sermon').length,
       totalEvents: events.length,
       totalBlogPosts: blogPosts.length,
       membersByTribe,
@@ -54,10 +58,10 @@ const AdminDashboard = () => {
         data: attendanceData
       }
     });
-  }, [members, sermons, events, blogPosts]);
+  }, [members, sermons, events, tribes]);
 
   const recentMembers = [...members]
-    .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+    .sort((a, b) => new Date(b.join_date || '').getTime() - new Date(a.join_date || '').getTime())
     .slice(0, 5);
 
   const getActivePercentage = () => {
@@ -163,22 +167,25 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentMembers.map(member => (
-                    <div key={member.id} className="flex items-center">
-                      <div className="w-9 h-9 rounded-full bg-church-primary/10 flex items-center justify-center text-church-primary mr-3">
-                        {member.name.charAt(0)}
+                  {recentMembers.map(member => {
+                    const memberTribe = tribes.find(t => t.id === member.tribe_id)?.name;
+                    return (
+                      <div key={member.id} className="flex items-center">
+                        <div className="w-9 h-9 rounded-full bg-church-primary/10 flex items-center justify-center text-church-primary mr-3">
+                          {member.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">{member.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {memberTribe ? `Tribe of ${memberTribe}` : 'No tribe assigned'}
+                          </p>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {member.join_date}
+                        </div>
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Tribe of {member.tribe}
-                        </p>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {member.joinDate}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -225,7 +232,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {members.filter(m => {
-                    const joinDate = new Date(m.joinDate);
+                    const joinDate = new Date(m.join_date || '');
                     const now = new Date();
                     return joinDate.getMonth() === now.getMonth() && 
                            joinDate.getFullYear() === now.getFullYear();
@@ -239,7 +246,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle>Members by Tribe</CardTitle>
               <CardDescription>
-                Distribution of members across the 12 tribes
+                Distribution of members across the tribes
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -270,7 +277,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalSermons}</div>
                 <p className="text-xs text-muted-foreground">
-                  {sermons.filter(s => s.featured).length} featured sermons
+                  {sermons.filter(s => s.type === 'sermon' && s.featured).length} featured sermons
                 </p>
               </CardContent>
             </Card>
@@ -296,7 +303,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalBlogPosts}</div>
                 <p className="text-xs text-muted-foreground">
-                  {blogPosts.filter(p => p.featured).length} featured posts
+                  {sermons.filter(p => p.type === 'blog' && p.featured).length} featured posts
                 </p>
               </CardContent>
             </Card>
@@ -310,6 +317,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   {sermons
+                    .filter(sermon => sermon.type === 'sermon')
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .slice(0, 5)
                     .map(sermon => (
