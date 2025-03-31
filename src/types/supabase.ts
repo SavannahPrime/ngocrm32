@@ -30,3 +30,40 @@ export interface EventType {
   created_at?: string | null;
   updated_at?: string | null;
 }
+
+// Helper function to validate YouTube URL
+export const isYouTubeUrl = (url: string): boolean => {
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+// Helper function to validate Google Drive URL
+export const isGoogleDriveUrl = (url: string): boolean => {
+  return url.includes('drive.google.com');
+};
+
+// Function to extract YouTube video ID
+export const getYouTubeVideoId = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+// Function to convert YouTube URL to embed URL
+export const getYouTubeEmbedUrl = (url: string): string | null => {
+  const videoId = getYouTubeVideoId(url);
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+};
+
+// Function to convert Google Drive URL to embed URL
+export const getGoogleDriveEmbedUrl = (url: string): string | null => {
+  // Extract the file ID from a Google Drive URL
+  const regex = /\/d\/([^/]+)/;
+  const match = url.match(regex);
+  
+  if (match && match[1]) {
+    const fileId = match[1];
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+  
+  return null;
+};

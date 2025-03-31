@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SermonType } from "@/types/supabase";
+import { SermonType, isYouTubeUrl, isGoogleDriveUrl } from "@/types/supabase";
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,6 +111,31 @@ const BlogPost = () => {
           <p key={index}>{paragraph}</p>
         ))}
       </div>
+      
+      {post.video_url && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Video</h2>
+          <div className="rounded-lg overflow-hidden">
+            {isYouTubeUrl(post.video_url) || isGoogleDriveUrl(post.video_url) ? (
+              <div className="aspect-video">
+                <iframe 
+                  src={post.video_url} 
+                  className="w-full h-full" 
+                  allowFullScreen
+                  title="Embedded video"
+                  frameBorder="0"
+                ></iframe>
+              </div>
+            ) : (
+              <video 
+                src={post.video_url} 
+                controls 
+                className="w-full"
+              ></video>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

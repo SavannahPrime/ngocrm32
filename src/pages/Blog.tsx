@@ -1,7 +1,8 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { CalendarIcon, User } from "lucide-react";
+import { CalendarIcon, User, Video } from "lucide-react";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +74,7 @@ const Blog = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
           {posts.map((post) => (
-            <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
               {post.image_url && (
                 <div className="h-48 overflow-hidden">
                   <img 
@@ -94,7 +95,7 @@ const Blog = () => {
                   {format(new Date(post.date), "MMMM d, yyyy")}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-grow">
                 <p className="text-gray-600 line-clamp-3">
                   {post.content.substring(0, 150)}...
                 </p>
@@ -104,12 +105,24 @@ const Blog = () => {
                   <User className="h-4 w-4 text-church-primary" />
                   <span className="text-sm text-gray-600">{post.preacher}</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {(post.tags || []).map((tag: string, index: number) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
+                <div className="flex items-center gap-2">
+                  {post.video_url && (
+                    <div className="flex items-center">
+                      <Video className="h-4 w-4 text-church-primary" />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {(post.tags || []).slice(0, 2).map((tag: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {(post.tags || []).length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{(post.tags || []).length - 2}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardFooter>
             </Card>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -33,6 +34,7 @@ import { MoreHorizontal, Edit, Trash2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { SermonType } from "@/types/supabase";
+import { MediaUpload } from "@/components/MediaUpload";
 
 // Update component using our temporary type
 const AdminBlog = () => {
@@ -100,6 +102,16 @@ const AdminBlog = () => {
     setFormData({ ...formData, featured: checked });
   };
 
+  // Handle image URL changes
+  const handleImageUrlChange = (url: string) => {
+    setFormData({ ...formData, image_url: url });
+  };
+  
+  // Handle video URL changes
+  const handleVideoUrlChange = (url: string) => {
+    setFormData({ ...formData, video_url: url });
+  };
+
   // Handle tags input
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTagsInput(e.target.value);
@@ -157,12 +169,12 @@ const AdminBlog = () => {
       });
       setTagsInput("");
       fetchBlogPosts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding blog post:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add blog post. Please try again.",
+        description: `Failed to add blog post: ${error.message}`,
       });
     }
   };
@@ -210,12 +222,12 @@ const AdminBlog = () => {
       setIsEditDialogOpen(false);
       setSelectedPost(null);
       fetchBlogPosts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating blog post:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update blog post. Please try again.",
+        description: `Failed to update blog post: ${error.message}`,
       });
     }
   };
@@ -240,12 +252,12 @@ const AdminBlog = () => {
       setIsDeleteDialogOpen(false);
       setSelectedPost(null);
       fetchBlogPosts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting blog post:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete blog post. Please try again.",
+        description: `Failed to delete blog post: ${error.message}`,
       });
     }
   };
@@ -445,28 +457,22 @@ const AdminBlog = () => {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  name="image_url"
-                  placeholder="Enter image URL"
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="video_url">Video URL</Label>
-                <Input
-                  id="video_url"
-                  name="video_url"
-                  placeholder="Enter video URL"
-                  value={formData.video_url}
-                  onChange={handleInputChange}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Featured Image</Label>
+              <MediaUpload 
+                type="image" 
+                value={formData.image_url as string} 
+                onChange={handleImageUrlChange} 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Video</Label>
+              <MediaUpload 
+                type="video" 
+                value={formData.video_url as string} 
+                onChange={handleVideoUrlChange} 
+              />
             </div>
             
             <div className="space-y-2">
@@ -572,28 +578,22 @@ const AdminBlog = () => {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-image_url">Image URL</Label>
-                <Input
-                  id="edit-image_url"
-                  name="image_url"
-                  placeholder="Enter image URL"
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-video_url">Video URL</Label>
-                <Input
-                  id="edit-video_url"
-                  name="video_url"
-                  placeholder="Enter video URL"
-                  value={formData.video_url}
-                  onChange={handleInputChange}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Featured Image</Label>
+              <MediaUpload 
+                type="image" 
+                value={formData.image_url as string} 
+                onChange={handleImageUrlChange} 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Video</Label>
+              <MediaUpload 
+                type="video" 
+                value={formData.video_url as string} 
+                onChange={handleVideoUrlChange} 
+              />
             </div>
             
             <div className="space-y-2">
