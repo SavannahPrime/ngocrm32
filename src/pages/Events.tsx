@@ -1,186 +1,203 @@
 
-import { useState, useEffect } from "react";
-import { useChurch, Event } from "@/contexts/ChurchContext";
+import { useEffect, useState } from "react";
+import { format, isAfter, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Calendar, MapPin, Clock } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarIcon, Clock, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Heading } from "@/components/ui/heading";
 
-const EventsPage = () => {
-  const { events } = useChurch();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
+// Define the event type
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  location: string;
+  image_url?: string;
+  featured: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+const Events = () => {
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [pastEvents, setPastEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Get current date for filtering
-  const currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
-
-  // Group events by month
-  const groupedEvents = filteredEvents.reduce((groups, event) => {
-    const date = new Date(event.date);
-    const month = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-    
-    if (!groups[month]) {
-      groups[month] = [];
-    }
-    
-    groups[month].push(event);
-    return groups;
-  }, {} as Record<string, Event[]>);
-
-  // Sort months chronologically
-  const sortedMonths = Object.keys(groupedEvents).sort((a, b) => {
-    const dateA = new Date(a);
-    const dateB = new Date(b);
-    return dateA.getTime() - dateB.getTime();
-  });
-
-  // Filter events based on search term and active tab
   useEffect(() => {
-    let filtered = [...events];
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('date', { ascending: true });
+          
+        if (error) throw error;
+        
+        // Split events into upcoming and past
+        const events = data || [];
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Set to beginning of today
+        
+        const upcoming: Event[] = [];
+        const past: Event[] = [];
+        
+        for (const event of events) {
+          const eventDate = parseISO(event.date);
+          if (isAfter(eventDate, now) || eventDate.getTime() === now.getTime()) {
+            upcoming.push(event);
+          } else {
+            past.push(event);
+          }
+        }
+        
+        setUpcomingEvents(upcoming);
+        setPastEvents(past.reverse()); // Show most recent past events first
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        event =>
-          event.title.toLowerCase().includes(term) ||
-          event.description.toLowerCase().includes(term) ||
-          event.location.toLowerCase().includes(term)
-      );
-    }
-    
-    // Apply tab filter
-    if (activeTab === "upcoming") {
-      filtered = filtered.filter(event => new Date(event.date) >= currentDate);
-    } else if (activeTab === "past") {
-      filtered = filtered.filter(event => new Date(event.date) < currentDate);
-    } else if (activeTab === "featured") {
-      filtered = filtered.filter(event => event.featured);
-    }
-    
-    // Sort by date
-    filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
-    setFilteredEvents(filtered);
-  }, [events, searchTerm, activeTab, currentDate]);
+    fetchEvents();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <Heading title="Church Events" description="Join us for our upcoming events and gatherings" center />
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-church-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold font-serif text-church-primary">Church Events</h1>
-        <p className="mt-2 text-gray-600">Join us for these upcoming gatherings and activities</p>
-      </div>
+      <Heading 
+        title="Church Events" 
+        description="Join us for our upcoming events and gatherings" 
+        center 
+      />
 
-      <div className="mb-8 flex flex-col md:flex-row gap-4 items-start">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-          <Input
-            type="text"
-            placeholder="Search events by title, description, or location..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {/* Upcoming Events Section */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-serif font-bold text-church-primary mb-6">Upcoming Events</h2>
         
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-          <TabsList className="grid grid-cols-4 w-full md:w-auto">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="featured">Featured</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {filteredEvents.length > 0 ? (
-        <div className="space-y-12">
-          {sortedMonths.map(month => (
-            <div key={month}>
-              <h2 className="text-2xl font-bold font-serif text-church-primary mb-6 border-b pb-2">
-                {month}
-              </h2>
-              
-              <div className="space-y-6">
-                {groupedEvents[month].map(event => (
-                  <div 
-                    key={event.id} 
-                    className={`bg-white rounded-lg shadow-md overflow-hidden flex flex-col md:flex-row
-                      ${event.featured ? 'border-l-4 border-church-primary' : ''}
-                      ${new Date(event.date) < currentDate ? 'opacity-70' : ''}`}
-                  >
-                    {event.imageUrl ? (
-                      <div className="md:w-1/4">
-                        <img 
-                          src={event.imageUrl} 
-                          alt={event.title} 
-                          className="w-full h-48 md:h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="bg-church-light md:w-1/4 h-48 md:h-auto flex items-center justify-center">
-                        <Calendar className="h-12 w-12 text-church-primary" />
-                      </div>
+        {upcomingEvents.length === 0 ? (
+          <div className="text-center bg-white rounded-lg shadow p-8">
+            <p className="text-gray-600">There are no upcoming events at this time. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {upcomingEvents.map((event) => (
+              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                {event.image_url && (
+                  <div className="h-48 overflow-hidden">
+                    <img 
+                      src={event.image_url} 
+                      alt={event.title} 
+                      className="w-full h-full object-cover transition-transform hover:scale-105"
+                    />
+                  </div>
+                )}
+                <CardHeader>
+                  <CardTitle className="text-xl">
+                    {event.title}
+                    {event.featured && (
+                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-church-light text-church-primary">
+                        Featured
+                      </span>
                     )}
-                    
-                    <div className="p-6 md:w-3/4">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                        <h3 className="text-xl font-bold text-church-primary mb-2 md:mb-0">
-                          {event.title}
-                          {event.featured && (
-                            <span className="ml-2 bg-church-primary text-white text-xs font-semibold px-2 py-1 rounded">
-                              Featured
-                            </span>
-                          )}
-                        </h3>
-                        
-                        <div className="flex items-center text-gray-500 text-sm">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span className="font-medium">{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                        </div>
-                      </div>
-                      
-                      <p className="text-gray-600 mb-4">{event.description}</p>
-                      
-                      <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 mb-4 space-y-2 sm:space-y-0 sm:space-x-6">
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span>{event.time}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          <span>{event.location}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-3">
-                        <Button className="bg-church-primary hover:bg-church-primary/90">
-                          Register Now
-                        </Button>
-                        <Button variant="outline" className="border-church-primary text-church-primary hover:bg-church-primary hover:text-white">
-                          Add to Calendar
-                        </Button>
-                      </div>
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    {format(new Date(event.date), "EEEE, MMMM d, yyyy")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col space-y-2 mb-4">
+                    <div className="flex items-center text-gray-600">
+                      <Clock className="h-4 w-4 mr-2" />
+                      <span>{event.time}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      <span>{event.location}</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <p className="text-gray-600">
+                    {event.description.length > 150 
+                      ? `${event.description.substring(0, 150)}...` 
+                      : event.description}
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full bg-church-primary hover:bg-church-primary/90">
+                    Learn More
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Past Events Section */}
+      {pastEvents.length > 0 && (
+        <div className="mt-16">
+          <h2 className="text-2xl font-serif font-bold text-church-primary mb-6">Past Events</h2>
+          
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="divide-y divide-gray-200">
+              {pastEvents.slice(0, 5).map((event) => (
+                <div key={event.id} className="flex flex-col md:flex-row p-6 gap-4">
+                  {event.image_url && (
+                    <div className="flex-shrink-0 h-24 w-24 rounded-md overflow-hidden bg-gray-100">
+                      <img 
+                        src={event.image_url} 
+                        alt={event.title} 
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-grow">
+                    <h3 className="text-lg font-medium">{event.title}</h3>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                      <div className="flex items-center">
+                        <CalendarIcon className="h-4 w-4 mr-1" />
+                        {format(new Date(event.date), "MMMM d, yyyy")}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {event.time}
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {event.location}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-gray-600 line-clamp-2">{event.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-white rounded-lg shadow-md">
-          <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-medium text-gray-700">No events found</h3>
-          <p className="text-gray-500 mt-2">
-            Try adjusting your search or filter to find events
-          </p>
+            
+            {pastEvents.length > 5 && (
+              <div className="px-6 py-4 bg-gray-50 text-center">
+                <Button variant="outline">View All Past Events</Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default EventsPage;
+export default Events;

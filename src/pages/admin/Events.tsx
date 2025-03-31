@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -122,13 +121,17 @@ const AdminEvents = () => {
       
       const { data, error } = await supabase
         .from('events')
-        .insert([{
-          ...formData,
+        .insert({
+          title: formData.title,
+          description: formData.description,
           date: formData.date || new Date().toISOString().split('T')[0],
+          time: formData.time || "18:00",
+          location: formData.location,
+          image_url: formData.image_url,
           featured: formData.featured || false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }])
+        })
         .select();
         
       if (error) throw error;
@@ -176,7 +179,13 @@ const AdminEvents = () => {
       const { error } = await supabase
         .from('events')
         .update({
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          date: formData.date,
+          time: formData.time,
+          location: formData.location,
+          image_url: formData.image_url,
+          featured: formData.featured,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedEvent.id);

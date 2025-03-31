@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -16,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -81,13 +79,28 @@ const AdminSermons = () => {
       const { data, error } = await supabase
         .from('sermons')
         .select('*')
+        .eq('type', 'sermon')
         .order('date', { ascending: false });
         
       if (error) throw error;
       
-      // Filter only sermons (not blog posts)
-      const sermonsOnly = data?.filter(item => item.type === 'sermon') || [];
-      setSermons(sermonsOnly);
+      if (data && data.length > 0) {
+        setSermons(data as Sermon[]);
+      } else {
+        const { data: allData, error: allError } = await supabase
+          .from('sermons')
+          .select('*')
+          .order('date', { ascending: false });
+          
+        if (allError) throw allError;
+        
+        const sermonsWithType = allData?.map(sermon => ({
+          ...sermon,
+          type: sermon.type || 'sermon'
+        })) || [];
+        
+        setSermons(sermonsWithType as Sermon[]);
+      }
     } catch (error) {
       console.error("Error fetching sermons:", error);
       toast({
@@ -137,13 +150,18 @@ const AdminSermons = () => {
       
       const { data, error } = await supabase
         .from('sermons')
-        .insert([{
-          ...formData,
-          tags,
+        .insert({
+          title: formData.title,
+          preacher: formData.preacher,
           date: formData.date || new Date().toISOString().split('T')[0],
+          scripture: formData.scripture,
+          content: formData.content,
+          video_url: formData.video_url,
+          image_url: formData.image_url,
           featured: formData.featured || false,
+          tags: tags,
           type: 'sermon'
-        }])
+        })
         .select();
         
       if (error) throw error;
@@ -197,10 +215,17 @@ const AdminSermons = () => {
       const { error } = await supabase
         .from('sermons')
         .update({
-          ...formData,
-          tags,
-          updated_at: new Date().toISOString(),
-          type: 'sermon'
+          title: formData.title,
+          preacher: formData.preacher,
+          date: formData.date,
+          scripture: formData.scripture,
+          content: formData.content,
+          video_url: formData.video_url,
+          image_url: formData.image_url,
+          featured: formData.featured,
+          tags: tags,
+          type: 'sermon',
+          updated_at: new Date().toISOString()
         })
         .eq('id', selectedSermon.id);
         

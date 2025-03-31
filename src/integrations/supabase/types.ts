@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      events: {
+        Row: {
+          created_at: string | null
+          date: string
+          description: string
+          featured: boolean | null
+          id: string
+          image_url: string | null
+          location: string
+          time: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          description: string
+          featured?: boolean | null
+          id?: string
+          image_url?: string | null
+          location: string
+          time: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          description?: string
+          featured?: boolean | null
+          id?: string
+          image_url?: string | null
+          location?: string
+          time?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sermons: {
         Row: {
           content: string
@@ -21,6 +60,7 @@ export type Database = {
           scripture: string
           tags: string[] | null
           title: string
+          type: string | null
           updated_at: string | null
           video_url: string | null
         }
@@ -35,6 +75,7 @@ export type Database = {
           scripture: string
           tags?: string[] | null
           title: string
+          type?: string | null
           updated_at?: string | null
           video_url?: string | null
         }
@@ -49,6 +90,7 @@ export type Database = {
           scripture?: string
           tags?: string[] | null
           title?: string
+          type?: string | null
           updated_at?: string | null
           video_url?: string | null
         }

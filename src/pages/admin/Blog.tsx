@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -16,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -47,6 +45,7 @@ interface BlogPost {
   image_url?: string;
   featured: boolean;
   tags: string[];
+  type?: string;
 }
 
 const AdminBlog = () => {
@@ -67,7 +66,8 @@ const AdminBlog = () => {
     video_url: "",
     image_url: "",
     featured: false,
-    tags: []
+    tags: [],
+    type: "blog"
   });
   
   const [tagsInput, setTagsInput] = useState("");
@@ -79,6 +79,7 @@ const AdminBlog = () => {
       const { data, error } = await supabase
         .from('sermons')
         .select('*')
+        .eq('type', 'blog')
         .order('date', { ascending: false });
         
       if (error) throw error;
@@ -133,12 +134,18 @@ const AdminBlog = () => {
       
       const { data, error } = await supabase
         .from('sermons')
-        .insert([{
-          ...formData,
-          tags,
+        .insert({
+          title: formData.title,
+          preacher: formData.preacher,
           date: formData.date || new Date().toISOString().split('T')[0],
-          featured: formData.featured || false
-        }])
+          scripture: formData.scripture,
+          content: formData.content,
+          video_url: formData.video_url,
+          image_url: formData.image_url,
+          featured: formData.featured || false,
+          tags: tags,
+          type: 'blog'
+        })
         .select();
         
       if (error) throw error;
@@ -158,7 +165,8 @@ const AdminBlog = () => {
         video_url: "",
         image_url: "",
         featured: false,
-        tags: []
+        tags: [],
+        type: "blog"
       });
       setTagsInput("");
       fetchBlogPosts();
@@ -191,8 +199,16 @@ const AdminBlog = () => {
       const { error } = await supabase
         .from('sermons')
         .update({
-          ...formData,
-          tags,
+          title: formData.title,
+          preacher: formData.preacher,
+          date: formData.date,
+          scripture: formData.scripture,
+          content: formData.content,
+          video_url: formData.video_url,
+          image_url: formData.image_url,
+          featured: formData.featured,
+          tags: tags,
+          type: 'blog',
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedPost.id);
@@ -258,7 +274,8 @@ const AdminBlog = () => {
       content: post.content,
       video_url: post.video_url || "",
       image_url: post.image_url || "",
-      featured: post.featured || false
+      featured: post.featured || false,
+      type: "blog"
     });
     setTagsInput(post.tags ? post.tags.join(', ') : "");
     setIsEditDialogOpen(true);
@@ -284,7 +301,8 @@ const AdminBlog = () => {
               content: "",
               video_url: "",
               image_url: "",
-              featured: false
+              featured: false,
+              type: "blog"
             });
             setTagsInput("");
             setIsAddDialogOpen(true);
