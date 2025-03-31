@@ -32,32 +32,19 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Edit, Trash2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { SermonType } from "@/types/supabase";
 
-// Define blog post type
-interface BlogPost {
-  id: string;
-  title: string;
-  preacher: string;
-  date: string;
-  scripture: string;
-  content: string;
-  video_url?: string;
-  image_url?: string;
-  featured: boolean;
-  tags: string[];
-  type?: string;
-}
-
+// Update component using our temporary type
 const AdminBlog = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [blogPosts, setBlogPosts] = useState<SermonType[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [selectedPost, setSelectedPost] = useState<SermonType | null>(null);
   
-  const [formData, setFormData] = useState<Partial<BlogPost>>({
+  const [formData, setFormData] = useState<Partial<SermonType>>({
     title: "",
     preacher: "",
     date: new Date().toISOString().split('T')[0],
@@ -264,7 +251,7 @@ const AdminBlog = () => {
   };
 
   // Open edit dialog
-  const handleOpenEditDialog = (post: BlogPost) => {
+  const handleOpenEditDialog = (post: SermonType) => {
     setSelectedPost(post);
     setFormData({
       title: post.title,
@@ -282,7 +269,7 @@ const AdminBlog = () => {
   };
 
   // Open delete dialog
-  const handleOpenDeleteDialog = (post: BlogPost) => {
+  const handleOpenDeleteDialog = (post: SermonType) => {
     setSelectedPost(post);
     setIsDeleteDialogOpen(true);
   };

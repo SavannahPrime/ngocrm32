@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
@@ -7,25 +6,11 @@ import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Heading } from "@/components/ui/heading";
-
-// Define the sermon/blog post type
-interface BlogPost {
-  id: string;
-  title: string;
-  preacher: string;
-  date: string;
-  scripture: string;
-  content: string;
-  video_url?: string;
-  image_url?: string;
-  featured: boolean;
-  tags: string[];
-  type?: string;
-}
+import { SermonType } from "@/types/supabase";
 
 const Blog = () => {
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<SermonType[]>([]);
 
   useEffect(() => {
     const fetchBlogPosts = async () => {

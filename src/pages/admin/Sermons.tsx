@@ -32,32 +32,18 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Edit, Trash2, PlusCircle, Video, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-
-// Define sermon type
-interface Sermon {
-  id: string;
-  title: string;
-  preacher: string;
-  date: string;
-  scripture: string;
-  content: string;
-  video_url?: string;
-  image_url?: string;
-  featured: boolean;
-  tags: string[];
-  type: string; // 'sermon' or 'blog'
-}
+import { SermonType } from "@/types/supabase";
 
 const AdminSermons = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [sermons, setSermons] = useState<Sermon[]>([]);
+  const [sermons, setSermons] = useState<SermonType[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedSermon, setSelectedSermon] = useState<Sermon | null>(null);
+  const [selectedSermon, setSelectedSermon] = useState<SermonType | null>(null);
   
-  const [formData, setFormData] = useState<Partial<Sermon>>({
+  const [formData, setFormData] = useState<Partial<SermonType>>({
     title: "",
     preacher: "",
     date: new Date().toISOString().split('T')[0],
@@ -85,7 +71,7 @@ const AdminSermons = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setSermons(data as Sermon[]);
+        setSermons(data as SermonType[]);
       } else {
         const { data: allData, error: allError } = await supabase
           .from('sermons')
@@ -99,7 +85,7 @@ const AdminSermons = () => {
           type: sermon.type || 'sermon'
         })) || [];
         
-        setSermons(sermonsWithType as Sermon[]);
+        setSermons(sermonsWithType as SermonType[]);
       }
     } catch (error) {
       console.error("Error fetching sermons:", error);
@@ -280,7 +266,7 @@ const AdminSermons = () => {
   };
 
   // Open edit dialog
-  const handleOpenEditDialog = (sermon: Sermon) => {
+  const handleOpenEditDialog = (sermon: SermonType) => {
     setSelectedSermon(sermon);
     setFormData({
       title: sermon.title,
@@ -298,7 +284,7 @@ const AdminSermons = () => {
   };
 
   // Open delete dialog
-  const handleOpenDeleteDialog = (sermon: Sermon) => {
+  const handleOpenDeleteDialog = (sermon: SermonType) => {
     setSelectedSermon(sermon);
     setIsDeleteDialogOpen(true);
   };
@@ -318,6 +304,7 @@ const AdminSermons = () => {
               video_url: "",
               image_url: "",
               featured: false,
+              tags: [],
               type: "sermon"
             });
             setTagsInput("");

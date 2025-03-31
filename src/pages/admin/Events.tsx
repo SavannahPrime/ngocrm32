@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -33,31 +32,18 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Edit, Trash2, PlusCircle, Calendar, Clock, MapPin } from "lucide-react";
 import { format, isAfter, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-
-// Define event type
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  location: string;
-  image_url?: string;
-  featured: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+import { EventType } from "@/types/supabase";
 
 const AdminEvents = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventType[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   
-  const [formData, setFormData] = useState<Partial<Event>>({
+  const [formData, setFormData] = useState<Partial<EventType>>({
     title: "",
     description: "",
     date: new Date().toISOString().split('T')[0],
@@ -241,7 +227,7 @@ const AdminEvents = () => {
   };
 
   // Open edit dialog
-  const handleOpenEditDialog = (event: Event) => {
+  const handleOpenEditDialog = (event: EventType) => {
     setSelectedEvent(event);
     setFormData({
       title: event.title,
@@ -256,7 +242,7 @@ const AdminEvents = () => {
   };
 
   // Open delete dialog
-  const handleOpenDeleteDialog = (event: Event) => {
+  const handleOpenDeleteDialog = (event: EventType) => {
     setSelectedEvent(event);
     setIsDeleteDialogOpen(true);
   };

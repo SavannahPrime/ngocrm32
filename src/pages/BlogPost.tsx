@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -6,27 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-// Define the sermon/blog post type
-interface Sermon {
-  id: string;
-  title: string;
-  preacher: string;
-  date: string;
-  scripture: string;
-  content: string;
-  video_url?: string;
-  image_url?: string;
-  featured: boolean;
-  tags: string[];
-}
+import { SermonType } from "@/types/supabase";
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
-  const [post, setPost] = useState<Sermon | null>(null);
+  const [post, setPost] = useState<SermonType | null>(null);
   
   useEffect(() => {
     const fetchBlogPost = async () => {
