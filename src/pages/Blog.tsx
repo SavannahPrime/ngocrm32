@@ -18,6 +18,7 @@ const Blog = () => {
     const fetchBlogPosts = async () => {
       try {
         setLoading(true);
+        // Only fetch blog posts (type = 'blog')
         const { data, error } = await supabase
           .from('sermons')
           .select('*')
@@ -27,21 +28,6 @@ const Blog = () => {
         if (error) throw error;
         
         setPosts(data || []);
-
-        // If no posts with type 'blog' are found, fetch all posts for backward compatibility
-        if (!data || data.length === 0) {
-          const { data: allData, error: allError } = await supabase
-            .from('sermons')
-            .select('*')
-            .order('date', { ascending: false });
-            
-          if (allError) {
-            toast.error("Error fetching blog posts");
-            throw allError;
-          }
-          
-          setPosts(allData || []);
-        }
       } catch (error) {
         console.error("Error fetching blog posts:", error);
         toast.error("Failed to load blog posts");

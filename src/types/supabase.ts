@@ -31,6 +31,42 @@ export interface EventType {
   updated_at?: string | null;
 }
 
+export interface TribeType {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface LeaderType {
+  id: string;
+  name: string;
+  role: string;
+  bio?: string | null;
+  image_url?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  featured?: boolean | null;
+  tribe_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface MemberType {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  birth_date?: string | null;
+  address?: string | null;
+  tribe_id?: string | null;
+  join_date?: string | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 // Helper function to validate YouTube URL
 export const isYouTubeUrl = (url: string): boolean => {
   return url.includes('youtube.com') || url.includes('youtu.be');

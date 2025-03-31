@@ -25,7 +25,8 @@ import AdminMembers from "./pages/admin/Members";
 import AdminSermons from "./pages/admin/Sermons";
 import AdminBlog from "./pages/admin/Blog";
 import AdminEvents from "./pages/admin/Events";
-import AdminEmployees from "./pages/admin/Employees";
+import AdminLeadership from "./pages/admin/Leadership";
+import AdminTribes from "./pages/admin/Tribes";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -62,7 +63,8 @@ const App = () => (
                 <Route path="blog" element={<AdminBlog />} />
                 <Route path="sermons" element={<AdminSermons />} />
                 <Route path="events" element={<AdminEvents />} />
-                <Route path="employees" element={<AdminEmployees />} />
+                <Route path="leadership" element={<AdminLeadership />} />
+                <Route path="tribes" element={<AdminTribes />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

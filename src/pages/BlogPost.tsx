@@ -21,11 +21,12 @@ const BlogPost = () => {
       
       try {
         setLoading(true);
-        // For now, we're using the sermons table as blog posts
+        // Only fetch blog posts (type = 'blog')
         const { data, error } = await supabase
           .from('sermons')
           .select('*')
           .eq('id', id)
+          .eq('type', 'blog')
           .maybeSingle();
           
         if (error) throw error;

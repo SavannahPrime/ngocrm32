@@ -1,205 +1,171 @@
 
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { useChurch } from "@/contexts/ChurchContext";
+import { useParams, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, BookOpen, Video, Share2, Download } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Calendar, User, Book } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { SermonType, getYouTubeEmbedUrl, isYouTubeUrl, isGoogleDriveUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
 
 const SermonDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { sermons } = useChurch();
   const navigate = useNavigate();
-  const [sermon, setSermon] = useState(sermons.find(s => s.id === id));
+  
   const [loading, setLoading] = useState(true);
-  const [relatedSermons, setRelatedSermons] = useState([]);
-
+  const [sermon, setSermon] = useState<SermonType | null>(null);
+  
   useEffect(() => {
-    // Simulate loading
-    setLoading(true);
-    const timer = setTimeout(() => {
-      const foundSermon = sermons.find(s => s.id === id);
-      setSermon(foundSermon);
+    const fetchSermon = async () => {
+      if (!id) return;
       
-      // If sermon not found, we'll handle that in the render
-      if (foundSermon) {
-        // Find related sermons based on tags, exclude current sermon
-        const related = sermons
-          .filter(s => 
-            s.id !== id && 
-            s.tags && 
-            foundSermon.tags && 
-            s.tags.some(tag => foundSermon.tags.includes(tag))
-          )
-          .slice(0, 3);
-        setRelatedSermons(related);
+      try {
+        setLoading(true);
+        // Only fetch sermons (type = 'sermon')
+        const { data, error } = await supabase
+          .from('sermons')
+          .select('*')
+          .eq('id', id)
+          .eq('type', 'sermon')
+          .maybeSingle();
+          
+        if (error) throw error;
+        
+        setSermon(data);
+      } catch (error) {
+        console.error("Error fetching sermon:", error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
-    }, 500); // Simulate network delay
+    };
     
-    return () => clearTimeout(timer);
-  }, [id, sermons]);
-
-  // Handle not found
-  if (!loading && !sermon) {
+    fetchSermon();
+  }, [id]);
+  
+  if (loading) {
     return (
-      <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-        <BookOpen size={64} className="mx-auto text-gray-400 mb-6" />
-        <h1 className="text-3xl font-bold font-serif text-church-primary mb-4">Sermon Not Found</h1>
-        <p className="text-gray-600 mb-8">The sermon you're looking for doesn't exist or has been removed.</p>
-        <Button onClick={() => navigate('/sermons')} className="bg-church-primary hover:bg-church-primary/90">
-          Return to Sermons
+      <div className="py-12 px-4 flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-church-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!sermon) {
+    return (
+      <div className="py-12 px-4 text-center">
+        <h1 className="text-2xl font-bold text-church-primary mb-4">Sermon Not Found</h1>
+        <p className="mb-6">The sermon you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate('/sermons')}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Sermons
         </Button>
       </div>
     );
   }
 
-  return (
-    <div className="py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Back button */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/sermons')}
-            className="text-church-primary hover:text-church-primary/90 hover:bg-church-light p-0"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to All Sermons
-          </Button>
-        </div>
+  // Determine proper embed URL for videos
+  const getEmbedUrl = (url: string): string | null => {
+    if (isYouTubeUrl(url)) {
+      return getYouTubeEmbedUrl(url);
+    } else if (isGoogleDriveUrl(url)) {
+      return getGoogleDriveEmbedUrl(url);
+    }
+    return url;
+  };
 
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-3/4" />
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-6 w-1/4 mt-2" />
-            <Skeleton className="h-72 w-full mt-6" />
-            <div className="space-y-2 mt-6">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
+  return (
+    <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      <Button 
+        variant="ghost" 
+        onClick={() => navigate('/sermons')}
+        className="mb-6"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Sermons
+      </Button>
+      
+      {sermon.video_url && (
+        <div className="mb-8 rounded-lg overflow-hidden">
+          <div className="aspect-video">
+            {isYouTubeUrl(sermon.video_url) || isGoogleDriveUrl(sermon.video_url) ? (
+              <iframe 
+                src={getEmbedUrl(sermon.video_url) || ''} 
+                className="w-full h-full" 
+                allowFullScreen
+                title="Sermon video"
+                frameBorder="0"
+              ></iframe>
+            ) : (
+              <video 
+                src={sermon.video_url} 
+                controls 
+                className="w-full h-full object-cover"
+              ></video>
+            )}
+          </div>
+        </div>
+      )}
+      
+      <div className="flex flex-col md:flex-row md:items-start gap-8">
+        <div className="md:w-2/3">
+          <h1 className="text-3xl md:text-4xl font-bold font-serif text-church-primary mb-4">
+            {sermon.title}
+          </h1>
+          
+          <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-6">
+            <div className="flex items-center">
+              <User className="mr-2 h-4 w-4" />
+              <span>{sermon.preacher}</span>
+            </div>
+            <div className="flex items-center">
+              <Calendar className="mr-2 h-4 w-4" />
+              <span>{format(new Date(sermon.date), "MMMM d, yyyy")}</span>
+            </div>
+            <div className="flex items-center">
+              <Book className="mr-2 h-4 w-4" />
+              <span>{sermon.scripture}</span>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 md:p-8">
-                <h1 className="text-3xl font-bold font-serif text-church-primary mb-3">{sermon.title}</h1>
-                
-                <div className="flex flex-wrap gap-4 mb-6 text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    <span>{sermon.date}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <BookOpen className="w-4 h-4 mr-1" />
-                    <span>{sermon.scripture}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">{sermon.preacher}</span>
-                  </div>
-                </div>
-                
-                {/* Sermon image or video */}
-                {sermon.videoUrl ? (
-                  <div className="mb-8 rounded-lg overflow-hidden">
-                    <div className="aspect-w-16 aspect-h-9">
-                      <iframe
-                        src={sermon.videoUrl.replace('watch?v=', 'embed/')}
-                        title={sermon.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-96 border-0"
-                      ></iframe>
-                    </div>
-                  </div>
-                ) : sermon.imageUrl ? (
-                  <div className="mb-8">
-                    <img 
-                      src={sermon.imageUrl}
-                      alt={sermon.title}
-                      className="rounded-lg w-full h-auto max-h-96 object-cover"
-                    />
-                  </div>
-                ) : null}
-                
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-3 mb-8">
-                  {sermon.videoUrl && (
-                    <Button variant="outline" className="flex items-center">
-                      <Video className="mr-2 h-4 w-4" />
-                      Watch Video
-                    </Button>
-                  )}
-                  <Button variant="outline" className="flex items-center">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Audio
-                  </Button>
-                  <Button variant="outline" className="flex items-center">
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-                
-                {/* Sermon content */}
-                <div className="sermon-content">
-                  <p className="text-gray-700 whitespace-pre-line">{sermon.content}</p>
-                </div>
-                
-                {/* Tags */}
-                {sermon.tags && sermon.tags.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="text-lg font-bold mb-2">Topics</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {sermon.tags.map((tag, index) => (
-                        <span 
-                          key={index} 
-                          className="bg-church-light text-church-primary px-3 py-1 rounded-full text-sm"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+          
+          <div className="flex flex-wrap gap-2 mb-8">
+            {(sermon.tags || []).map((tag: string, index: number) => (
+              <Badge key={index} variant="outline">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+          
+          <div className="prose prose-lg max-w-none">
+            {sermon.content.split('\n\n').map((paragraph: string, index: number) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+        </div>
+        
+        <div className="md:w-1/3">
+          {sermon.image_url && (
+            <div className="rounded-lg overflow-hidden mb-6">
+              <img 
+                src={sermon.image_url} 
+                alt={sermon.title} 
+                className="w-full h-auto"
+              />
+            </div>
+          )}
+          
+          <div className="bg-church-light p-6 rounded-lg">
+            <h2 className="text-lg font-bold text-church-primary mb-4">Scripture Reference</h2>
+            <div className="p-4 bg-white rounded border border-gray-200 mb-4">
+              <p className="italic text-gray-700">{sermon.scripture}</p>
             </div>
             
-            {/* Related sermons */}
-            {relatedSermons.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-2xl font-bold font-serif text-church-primary mb-6">
-                  Related Sermons
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {relatedSermons.map((related) => (
-                    <Link key={related.id} to={`/sermons/${related.id}`} className="block">
-                      <div className="bg-white rounded-lg shadow-md overflow-hidden h-full hover:shadow-lg transition-shadow">
-                        {related.imageUrl ? (
-                          <img 
-                            src={related.imageUrl} 
-                            alt={related.title} 
-                            className="w-full h-40 object-cover"
-                          />
-                        ) : (
-                          <div className="h-40 bg-gray-200 flex items-center justify-center">
-                            <BookOpen size={32} className="text-gray-400" />
-                          </div>
-                        )}
-                        <div className="p-4">
-                          <h3 className="font-bold text-church-primary line-clamp-2">{related.title}</h3>
-                          <p className="text-xs text-gray-500 mt-1">{related.date}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+            <h2 className="text-lg font-bold text-church-primary mb-2">Preached By</h2>
+            <p className="text-gray-700 mb-4">{sermon.preacher}</p>
+            
+            <h2 className="text-lg font-bold text-church-primary mb-2">Sermon Date</h2>
+            <p className="text-gray-700">{format(new Date(sermon.date), "MMMM d, yyyy")}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
