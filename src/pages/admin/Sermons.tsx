@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useChurch } from "@/contexts/ChurchContext";
 import { 
@@ -33,6 +32,7 @@ import { Edit, MoreVertical, Plus, Trash2, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminSermons = () => {
   const { sermons, addSermon, updateSermon, deleteSermon, isLoading } = useChurch();
@@ -81,28 +81,57 @@ const AdminSermons = () => {
     setFormData(prev => ({ ...prev, featured: checked }));
   };
   
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      addSermon({
-        title: formData.title,
-        preacher: formData.preacher,
-        date: formData.date,
-        scripture: formData.scripture,
-        content: formData.content,
-        videoUrl: formData.videoUrl,
-        imageUrl: formData.imageUrl,
-        featured: formData.featured,
-        tags: formData.tags.split(",").map(tag => tag.trim()),
+      const { data, error } = await supabase
+        .from('sermons')
+        .insert([
+          {
+            title: formData.title,
+            preacher: formData.preacher,
+            date: formData.date,
+            scripture: formData.scripture,
+            content: formData.content,
+            video_url: formData.videoUrl,
+            image_url: formData.imageUrl,
+            featured: formData.featured,
+            tags: formData.tags.split(",").map(tag => tag.trim()),
+          }
+        ])
+        .select();
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Sermon Added",
+        description: "The sermon has been successfully added.",
       });
+      
+      // Let the ChurchContext know about the change
+      if (data && data[0]) {
+        addSermon({
+          id: data[0].id,
+          title: data[0].title,
+          preacher: data[0].preacher,
+          date: data[0].date,
+          scripture: data[0].scripture,
+          content: data[0].content,
+          videoUrl: data[0].video_url || "",
+          imageUrl: data[0].image_url || "",
+          featured: data[0].featured || false,
+          tags: data[0].tags || [],
+        });
+      }
       
       setIsAddDialogOpen(false);
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error adding sermon:", error);
       toast({
         title: "Error Adding Sermon",
-        description: "There was an error adding the sermon. Please try again.",
+        description: error.message || "There was an error adding the sermon. Please try again.",
         variant: "destructive",
       });
     }
@@ -127,12 +156,36 @@ const AdminSermons = () => {
     }
   };
   
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedSermonId) return;
     
     try {
+      const { error } = await supabase
+        .from('sermons')
+        .update({
+          title: formData.title,
+          preacher: formData.preacher,
+          date: formData.date,
+          scripture: formData.scripture,
+          content: formData.content,
+          video_url: formData.videoUrl,
+          image_url: formData.imageUrl,
+          featured: formData.featured,
+          tags: formData.tags.split(",").map(tag => tag.trim()),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedSermonId);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Sermon Updated",
+        description: "The sermon has been successfully updated.",
+      });
+      
+      // Let the ChurchContext know about the change
       updateSermon(selectedSermonId, {
         title: formData.title,
         preacher: formData.preacher,
@@ -148,10 +201,11 @@ const AdminSermons = () => {
       setIsEditDialogOpen(false);
       resetForm();
       setSelectedSermonId(null);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error updating sermon:", error);
       toast({
         title: "Error Updating Sermon",
-        description: "There was an error updating the sermon. Please try again.",
+        description: error.message || "There was an error updating the sermon. Please try again.",
         variant: "destructive",
       });
     }
@@ -162,11 +216,34 @@ const AdminSermons = () => {
     setIsDeleteDialogOpen(true);
   };
   
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedSermonId) {
-      deleteSermon(selectedSermonId);
-      setIsDeleteDialogOpen(false);
-      setSelectedSermonId(null);
+      try {
+        const { error } = await supabase
+          .from('sermons')
+          .delete()
+          .eq('id', selectedSermonId);
+          
+        if (error) throw error;
+        
+        toast({
+          title: "Sermon Deleted",
+          description: "The sermon has been successfully deleted.",
+        });
+        
+        // Let the ChurchContext know about the change
+        deleteSermon(selectedSermonId);
+        
+        setIsDeleteDialogOpen(false);
+        setSelectedSermonId(null);
+      } catch (error: any) {
+        console.error("Error deleting sermon:", error);
+        toast({
+          title: "Error Deleting Sermon",
+          description: error.message || "There was an error deleting the sermon. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
   

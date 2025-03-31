@@ -9,7 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      sermons: {
+        Row: {
+          content: string
+          created_at: string | null
+          date: string
+          featured: boolean | null
+          id: string
+          image_url: string | null
+          preacher: string
+          scripture: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          date: string
+          featured?: boolean | null
+          id?: string
+          image_url?: string | null
+          preacher: string
+          scripture: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          date?: string
+          featured?: boolean | null
+          id?: string
+          image_url?: string | null
+          preacher?: string
+          scripture?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
