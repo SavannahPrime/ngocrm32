@@ -9,6 +9,9 @@ import { ChurchProvider } from "./contexts/ChurchContext";
 
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
+import About from "./pages/About";
+import Beliefs from "./pages/Beliefs";
+import Leadership from "./pages/Leadership";
 import Sermons from "./pages/Sermons";
 import SermonDetail from "./pages/SermonDetail";
 import Blog from "./pages/Blog";
@@ -38,6 +41,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
+                <Route path="about" element={<About />} />
+                <Route path="beliefs" element={<Beliefs />} />
+                <Route path="leadership" element={<Leadership />} />
                 <Route path="sermons" element={<Sermons />} />
                 <Route path="sermons/:id" element={<SermonDetail />} />
                 <Route path="blog" element={<Blog />} />
