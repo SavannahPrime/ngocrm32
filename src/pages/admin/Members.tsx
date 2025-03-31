@@ -1,4 +1,6 @@
-
+// At the top of the file, import the database client with the new types
+import { supabase } from "@/integrations/supabase/client";
+import { MemberType, TribeType } from "@/types/supabase";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -27,13 +29,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Edit, Trash2, PlusCircle, Calendar } from "lucide-react";
-import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
-import { MemberType, TribeType } from "@/types/supabase";
+import { MoreHorizontal, Edit, Trash2, PlusCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const AdminMembers = () => {
   const { toast } = useToast();
@@ -52,7 +51,7 @@ const AdminMembers = () => {
     birth_date: "",
     address: "",
     tribe_id: null,
-    join_date: new Date().toISOString().split('T')[0],
+    join_date: "",
     is_active: true
   });
   
@@ -60,74 +59,54 @@ const AdminMembers = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('*')
-        .order('name');
-        
-      if (memberError) throw memberError;
+    // Fetch members
+    const { data: memberData, error: memberError } = await supabase
+      .from('members')
+      .select('*')
+      .order('name');
       
-      const { data: tribeData, error: tribeError } = await supabase
-        .from('tribes')
-        .select('*')
-        .order('name');
-        
-      if (tribeError) throw tribeError;
+    if (memberError) throw memberError;
+    
+    // Fetch tribes
+    const { data: tribeData, error: tribeError } = await supabase
+      .from('tribes')
+      .select('*')
+      .order('name');
       
-      setMembers(memberData || []);
-      setTribes(tribeData || []);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load data. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (tribeError) throw tribeError;
+    
+    setMembers(memberData as unknown as MemberType[] || []);
+    setTribes(tribeData as unknown as TribeType[] || []);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Failed to load data. Please try again.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
   
-  // Load data on component mount
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // Handle is_active checkbox
-  const handleActiveChange = (checked: boolean) => {
-    setFormData({ ...formData, is_active: checked });
+  const handleSelectChange = (value: string) => {
+    setFormData({ ...formData, tribe_id: value });
   };
 
-  // Handle tribe selection
-  const handleTribeChange = (value: string) => {
-    setFormData({ ...formData, tribe_id: value === "null" ? null : value });
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData({ ...formData, [name]: checked });
   };
 
-  // Auto-assign tribe based on birth date
-  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const birthDate = e.target.value;
-    setFormData({ ...formData, birth_date: birthDate });
-    
-    if (birthDate) {
-      const month = new Date(birthDate).getMonth();
-      const tribeIndex = month; // 0-11 maps to January-December
-      
-      if (tribes.length >= 12) {
-        const matchingTribe = tribes[tribeIndex];
-        if (matchingTribe) {
-          setFormData(prev => ({ ...prev, birth_date: birthDate, tribe_id: matchingTribe.id }));
-        }
-      }
-    }
-  };
-
-  // Add member
   const handleAddMember = async () => {
     try {
       if (!formData.name) {
@@ -148,8 +127,8 @@ const AdminMembers = () => {
           birth_date: formData.birth_date,
           address: formData.address,
           tribe_id: formData.tribe_id,
-          join_date: formData.join_date || new Date().toISOString().split('T')[0],
-          is_active: formData.is_active !== undefined ? formData.is_active : true
+          join_date: formData.join_date || new Date().toISOString(),
+          is_active: true
         })
         .select();
         
@@ -168,7 +147,7 @@ const AdminMembers = () => {
         birth_date: "",
         address: "",
         tribe_id: null,
-        join_date: new Date().toISOString().split('T')[0],
+        join_date: "",
         is_active: true
       });
       fetchData();
@@ -182,7 +161,6 @@ const AdminMembers = () => {
     }
   };
 
-  // Edit member
   const handleEditMember = async () => {
     try {
       if (!selectedMember) return;
@@ -231,7 +209,6 @@ const AdminMembers = () => {
     }
   };
 
-  // Delete member
   const handleDeleteMember = async () => {
     try {
       if (!selectedMember) return;
@@ -261,33 +238,24 @@ const AdminMembers = () => {
     }
   };
 
-  // Open edit dialog
   const handleOpenEditDialog = (member: MemberType) => {
     setSelectedMember(member);
     setFormData({
       name: member.name,
-      email: member.email || "",
-      phone: member.phone || "",
-      birth_date: member.birth_date || "",
-      address: member.address || "",
+      email: member.email,
+      phone: member.phone,
+      birth_date: member.birth_date,
+      address: member.address,
       tribe_id: member.tribe_id,
-      join_date: member.join_date || new Date().toISOString().split('T')[0],
-      is_active: member.is_active !== null ? member.is_active : true
+      join_date: member.join_date,
+      is_active: member.is_active
     });
     setIsEditDialogOpen(true);
   };
 
-  // Open delete dialog
   const handleOpenDeleteDialog = (member: MemberType) => {
     setSelectedMember(member);
     setIsDeleteDialogOpen(true);
-  };
-
-  // Get tribe name from tribe ID
-  const getTribeName = (tribeId: string | null | undefined): string => {
-    if (!tribeId) return "Unassigned";
-    const tribe = tribes.find(t => t.id === tribeId);
-    return tribe ? tribe.name : "Unknown";
   };
 
   return (
@@ -303,7 +271,7 @@ const AdminMembers = () => {
               birth_date: "",
               address: "",
               tribe_id: null,
-              join_date: new Date().toISOString().split('T')[0],
+              join_date: "",
               is_active: true
             });
             setIsAddDialogOpen(true);
@@ -324,7 +292,7 @@ const AdminMembers = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Name</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Tribe</TableHead>
                 <TableHead>Join Date</TableHead>
@@ -338,17 +306,11 @@ const AdminMembers = () => {
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.name}</TableCell>
                     <TableCell>{member.email || member.phone || "-"}</TableCell>
-                    <TableCell>{getTribeName(member.tribe_id)}</TableCell>
                     <TableCell>
-                      {member.join_date ? format(new Date(member.join_date), "MMM d, yyyy") : "-"}
+                      {tribes.find(tribe => tribe.id === member.tribe_id)?.name || "Unassigned"}
                     </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        member.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {member.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </TableCell>
+                    <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell>{member.is_active ? "Active" : "Inactive"}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -390,124 +352,84 @@ const AdminMembers = () => {
       
       {/* Add Member Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Member</DialogTitle>
             <DialogDescription>
-              Add a new member to the church community.
+              Create a new member record.
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Enter member name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  placeholder="Enter phone number"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="birth_date">Birth Date (Tribe Assignment)</Label>
-                <div className="flex items-center">
-                  <Input
-                    id="birth_date"
-                    name="birth_date"
-                    type="date"
-                    value={formData.birth_date}
-                    onChange={handleBirthDateChange}
-                  />
-                  <Calendar className="ml-2 h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-            </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
-                id="address"
-                name="address"
-                placeholder="Enter residential address"
-                value={formData.address}
+                id="name"
+                name="name"
+                placeholder="Enter member name"
+                value={formData.name || ""}
                 onChange={handleInputChange}
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="tribe">Tribe</Label>
-                <Select 
-                  onValueChange={handleTribeChange} 
-                  defaultValue={formData.tribe_id || "null"}
-                  value={formData.tribe_id || "null"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a tribe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Unassigned</SelectItem>
-                    {tribes.map((tribe) => (
-                      <SelectItem key={tribe.id} value={tribe.id}>
-                        {tribe.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="join_date">Join Date</Label>
-                <Input
-                  id="join_date"
-                  name="join_date"
-                  type="date"
-                  value={formData.join_date}
-                  onChange={handleInputChange}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter member email"
+                value={formData.email || ""}
+                onChange={handleInputChange}
+              />
             </div>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="is_active" 
-                checked={formData.is_active} 
-                onCheckedChange={handleActiveChange} 
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                name="phone"
+                placeholder="Enter member phone"
+                value={formData.phone || ""}
+                onChange={handleInputChange}
               />
-              <label
-                htmlFor="is_active"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Active Member
-              </label>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="birth_date">Birth Date</Label>
+              <Input
+                id="birth_date"
+                name="birth_date"
+                type="date"
+                value={formData.birth_date || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                name="address"
+                placeholder="Enter member address"
+                rows={3}
+                value={formData.address || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tribe_id">Tribe</Label>
+              <Select onValueChange={handleSelectChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a tribe" defaultValue={formData.tribe_id || ""}/>
+                </SelectTrigger>
+                <SelectContent>
+                  {tribes.map(tribe => (
+                    <SelectItem key={tribe.id} value={tribe.id}>{tribe.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
@@ -520,124 +442,98 @@ const AdminMembers = () => {
       
       {/* Edit Member Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Member</DialogTitle>
             <DialogDescription>
-              Update the member information.
+              Update member information.
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Name *</Label>
-                <Input
-                  id="edit-name"
-                  name="name"
-                  placeholder="Enter member name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-phone">Phone</Label>
-                <Input
-                  id="edit-phone"
-                  name="phone"
-                  placeholder="Enter phone number"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-birth_date">Birth Date</Label>
-                <div className="flex items-center">
-                  <Input
-                    id="edit-birth_date"
-                    name="birth_date"
-                    type="date"
-                    value={formData.birth_date}
-                    onChange={handleBirthDateChange}
-                  />
-                  <Calendar className="ml-2 h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-            </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="edit-address">Address</Label>
+              <Label htmlFor="edit-name">Name *</Label>
               <Input
-                id="edit-address"
-                name="address"
-                placeholder="Enter residential address"
-                value={formData.address}
+                id="edit-name"
+                name="name"
+                placeholder="Enter member name"
+                value={formData.name || ""}
                 onChange={handleInputChange}
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-tribe">Tribe</Label>
-                <Select 
-                  onValueChange={handleTribeChange} 
-                  defaultValue={formData.tribe_id || "null"}
-                  value={formData.tribe_id || "null"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a tribe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Unassigned</SelectItem>
-                    {tribes.map((tribe) => (
-                      <SelectItem key={tribe.id} value={tribe.id}>
-                        {tribe.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-join_date">Join Date</Label>
-                <Input
-                  id="edit-join_date"
-                  name="join_date"
-                  type="date"
-                  value={formData.join_date}
-                  onChange={handleInputChange}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                name="email"
+                type="email"
+                placeholder="Enter member email"
+                value={formData.email || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input
+                id="edit-phone"
+                name="phone"
+                placeholder="Enter member phone"
+                value={formData.phone || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-birth_date">Birth Date</Label>
+              <Input
+                id="edit-birth_date"
+                name="birth_date"
+                type="date"
+                value={formData.birth_date || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Textarea
+                id="edit-address"
+                name="address"
+                placeholder="Enter member address"
+                rows={3}
+                value={formData.address || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-tribe_id">Tribe</Label>
+              <Select 
+                onValueChange={handleSelectChange}
+                defaultValue={formData.tribe_id || ""}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a tribe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tribes.map(tribe => (
+                    <SelectItem key={tribe.id} value={tribe.id}>{tribe.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="edit-is_active" 
-                checked={formData.is_active} 
-                onCheckedChange={handleActiveChange} 
+              <Label htmlFor="is_active">Active</Label>
+              <Input
+                id="is_active"
+                name="is_active"
+                type="checkbox"
+                checked={formData.is_active === true}
+                onChange={handleCheckboxChange}
               />
-              <label
-                htmlFor="edit-is_active"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Active Member
-              </label>
             </div>
           </div>
           
@@ -654,7 +550,7 @@ const AdminMembers = () => {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedMember?.name}" from members? This action cannot be undone.
+              Are you sure you want to delete "{selectedMember?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           

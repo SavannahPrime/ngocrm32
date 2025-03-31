@@ -54,7 +54,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (tribesError) throw tribesError;
-      setTribes(tribesData as TribeType[] || []);
+      setTribes(tribesData as unknown as TribeType[] || []);
       
       // Fetch members
       const { data: membersData, error: membersError } = await supabase
@@ -63,7 +63,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (membersError) throw membersError;
-      setMembers(membersData as MemberType[] || []);
+      setMembers(membersData as unknown as MemberType[] || []);
       
       // Fetch leaders
       const { data: leadersData, error: leadersError } = await supabase
@@ -72,7 +72,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (leadersError) throw leadersError;
-      setLeaders(leadersData as LeaderType[] || []);
+      setLeaders(leadersData as unknown as LeaderType[] || []);
       
       // Fetch sermons
       const { data: sermonsData, error: sermonsError } = await supabase
@@ -131,7 +131,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) throw error;
       
-      setMembers(prev => [...prev, data[0] as MemberType]);
+      setMembers(prev => [...prev, data[0] as unknown as MemberType]);
       
       toast({
         title: "Success",

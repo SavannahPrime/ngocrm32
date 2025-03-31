@@ -77,9 +77,9 @@ const AdminTribes = () => {
         
       if (leaderError) throw leaderError;
       
-      setTribes(tribeData || []);
-      setMembers(memberData || []);
-      setLeaders(leaderData || []);
+      setTribes(tribeData as unknown as TribeType[] || []);
+      setMembers(memberData as unknown as MemberType[] || []);
+      setLeaders(leaderData as unknown as LeaderType[] || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
