@@ -1,19 +1,26 @@
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { CalendarIcon, User, Video } from "lucide-react";
-import { format } from "date-fns";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Heading } from "@/components/ui/heading";
 import { SermonType } from "@/types/supabase";
-import { toast } from "sonner";
 
 const Blog = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<SermonType[]>([]);
-
+  const [featuredPost, setFeaturedPost] = useState<SermonType | null>(null);
+  
   useEffect(() => {
     const fetchBlogPosts = async () => {
       try {
@@ -27,10 +34,18 @@ const Blog = () => {
           
         if (error) throw error;
         
-        setPosts(data || []);
+        // Find the featured post
+        const featured = data.find(post => post.featured);
+        
+        if (featured) {
+          setFeaturedPost(featured);
+          // Remove the featured post from the regular posts list
+          setPosts(data.filter(post => post.id !== featured.id));
+        } else {
+          setPosts(data);
+        }
       } catch (error) {
         console.error("Error fetching blog posts:", error);
-        toast.error("Failed to load blog posts");
       } finally {
         setLoading(false);
       }
@@ -38,87 +53,120 @@ const Blog = () => {
     
     fetchBlogPosts();
   }, []);
-
-  if (loading) {
-    return (
-      <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <Heading title="Church Blog" description="Stay updated with our latest news and inspirational messages" center />
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-church-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
+  
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <Heading 
-        title="Church Blog" 
-        description="Stay updated with our latest news and inspirational messages" 
-        center 
-      />
-
-      {posts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-600">No blog posts available at the moment. Check back soon!</p>
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold font-serif text-church-primary">Church Blog</h1>
+        <p className="mt-2 text-gray-600">Stay updated with our latest church news and articles</p>
+      </div>
+      
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-church-primary"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-          {posts.map((post) => (
-            <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
-              {post.image_url && (
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={post.image_url} 
-                    alt={post.title} 
-                    className="w-full h-full object-cover transition-transform hover:scale-105"
-                  />
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle>
-                  <Link to={`/blog/${post.id}`} className="hover:text-church-primary transition-colors">
-                    {post.title}
-                  </Link>
-                </CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {format(new Date(post.date), "MMMM d, yyyy")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-gray-600 line-clamp-3">
-                  {post.content.substring(0, 150)}...
-                </p>
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <User className="h-4 w-4 text-church-primary" />
-                  <span className="text-sm text-gray-600">{post.preacher}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {post.video_url && (
-                    <div className="flex items-center">
-                      <Video className="h-4 w-4 text-church-primary" />
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {(post.tags || []).slice(0, 2).map((tag: string, index: number) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {(post.tags || []).length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{(post.tags || []).length - 2}
-                      </Badge>
+        <>
+          {featuredPost && (
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold font-serif text-church-primary mb-6">Featured Post</h2>
+              <Card className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-shadow">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="h-64 md:h-full bg-gray-200">
+                    {featuredPost.image_url ? (
+                      <img 
+                        src={featuredPost.image_url} 
+                        alt={featuredPost.title} 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-church-light">
+                        <span className="text-church-primary text-lg font-serif">Global Cathedral</span>
+                      </div>
                     )}
                   </div>
+                  <div className="p-6 flex flex-col justify-between">
+                    <div>
+                      <CardTitle className="text-2xl mb-2">{featuredPost.title}</CardTitle>
+                      <div className="flex items-center text-sm text-gray-500 mb-4">
+                        <span>{featuredPost.preacher}</span>
+                        <span className="mx-2">•</span>
+                        <span>{format(new Date(featuredPost.date), "MMMM d, yyyy")}</span>
+                      </div>
+                      <CardDescription className="line-clamp-3 mb-4">
+                        {featuredPost.content.substring(0, 200)}...
+                      </CardDescription>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {(featuredPost.tags || []).map((tag, index) => (
+                          <Badge key={index} variant="outline">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => navigate(`/blog/${featuredPost.id}`)}
+                      className="w-full md:w-auto"
+                    >
+                      Read More
+                    </Button>
+                  </div>
                 </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            </div>
+          )}
+          
+          {posts.length > 0 ? (
+            <div>
+              <h2 className="text-2xl font-bold font-serif text-church-primary mb-6">Recent Posts</h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {posts.map((post) => (
+                  <Card 
+                    key={post.id} 
+                    className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate(`/blog/${post.id}`)}
+                  >
+                    <div className="h-48 bg-gray-200">
+                      {post.image_url ? (
+                        <img 
+                          src={post.image_url} 
+                          alt={post.title} 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full bg-church-light">
+                          <span className="text-church-primary font-serif">Global Cathedral</span>
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <span>{post.preacher}</span>
+                        <span className="mx-2">•</span>
+                        <span>{format(new Date(post.date), "MMM d, yyyy")}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="line-clamp-3">
+                        {post.content.substring(0, 150)}...
+                      </CardDescription>
+                    </CardContent>
+                    <CardFooter>
+                      <div className="flex flex-wrap gap-2">
+                        {(post.tags || []).slice(0, 3).map((tag, index) => (
+                          <Badge key={index} variant="outline">{tag}</Badge>
+                        ))}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No blog posts found.</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
