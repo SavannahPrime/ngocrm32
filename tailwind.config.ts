@@ -106,8 +106,42 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.5s ease-out'
-			}
+			},
+			typography: {
+				DEFAULT: {
+					css: {
+						color: 'inherit',
+						a: {
+							color: 'inherit',
+							opacity: 0.8,
+							'&:hover': {
+								opacity: 1,
+								color: 'var(--primary)',
+							},
+							'&:focus': {
+								opacity: 1,
+								color: 'var(--primary)',
+							},
+						},
+						h1: {
+							color: 'inherit',
+						},
+						h2: {
+							color: 'inherit',
+						},
+						h3: {
+							color: 'inherit',
+						},
+						h4: {
+							color: 'inherit',
+						},
+					},
+				},
+			},
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"), 
+		require("@tailwindcss/typography")
+	],
 } satisfies Config;
