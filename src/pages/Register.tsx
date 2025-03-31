@@ -60,9 +60,12 @@ const Register = () => {
   });
 
   const onSubmit = (data: FormValues) => {
-    // Convert date to ISO string for consistency
+    // Convert date to ISO string for consistency and ensure all fields are non-optional
     const formattedData = {
-      ...data,
+      name: data.name,          // Make these non-optional
+      email: data.email,        // Make these non-optional
+      phone: data.phone,        // Make these non-optional
+      location: data.location,  // Make these non-optional
       birthDate: data.birthDate.toISOString().split('T')[0],
     };
     
