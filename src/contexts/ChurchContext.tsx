@@ -54,7 +54,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (tribesError) throw tribesError;
-      setTribes(tribesData as unknown as TribeType[] || []);
+      setTribes(tribesData || []);
       
       // Fetch members
       const { data: membersData, error: membersError } = await supabase
@@ -63,7 +63,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (membersError) throw membersError;
-      setMembers(membersData as unknown as MemberType[] || []);
+      setMembers(membersData || []);
       
       // Fetch leaders
       const { data: leadersData, error: leadersError } = await supabase
@@ -72,7 +72,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .order('name');
       
       if (leadersError) throw leadersError;
-      setLeaders(leadersData as unknown as LeaderType[] || []);
+      setLeaders(leadersData || []);
       
       // Fetch sermons
       const { data: sermonsData, error: sermonsError } = await supabase
@@ -115,6 +115,16 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       
+      // Check if required field is present
+      if (!member.name) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Member name is required.",
+        });
+        return false;
+      }
+      
       // If birth date is provided, try to auto-assign tribe based on month
       if (member.birth_date && !member.tribe_id && tribes.length > 0) {
         const tribeName = getTribeFromBirthDate(member.birth_date);
@@ -126,12 +136,23 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
       
       const { data, error } = await supabase
         .from('members')
-        .insert(member)
+        .insert({
+          name: member.name,
+          email: member.email || null,
+          phone: member.phone || null,
+          birth_date: member.birth_date || null,
+          address: member.address || null,
+          tribe_id: member.tribe_id || null,
+          join_date: member.join_date || new Date().toISOString(),
+          is_active: member.is_active ?? true
+        })
         .select();
       
       if (error) throw error;
       
-      setMembers(prev => [...prev, data[0] as unknown as MemberType]);
+      if (data && data.length > 0) {
+        setMembers(prev => [...prev, data[0] as MemberType]);
+      }
       
       toast({
         title: "Success",
