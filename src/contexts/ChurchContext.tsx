@@ -46,6 +46,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      console.log("Fetching church data from Supabase...");
       
       // Fetch tribes
       const { data: tribesData, error: tribesError } = await supabase
@@ -53,8 +54,12 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .select('*')
         .order('name');
       
-      if (tribesError) throw tribesError;
+      if (tribesError) {
+        console.error("Error fetching tribes:", tribesError);
+        throw tribesError;
+      }
       setTribes(tribesData || []);
+      console.log("Tribes fetched:", tribesData ? tribesData.length : 0);
       
       // Fetch members
       const { data: membersData, error: membersError } = await supabase
@@ -62,8 +67,12 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .select('*')
         .order('name');
       
-      if (membersError) throw membersError;
+      if (membersError) {
+        console.error("Error fetching members:", membersError);
+        throw membersError;
+      }
       setMembers(membersData || []);
+      console.log("Members fetched:", membersData ? membersData.length : 0);
       
       // Fetch leaders
       const { data: leadersData, error: leadersError } = await supabase
@@ -71,27 +80,51 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         .select('*')
         .order('name');
       
-      if (leadersError) throw leadersError;
+      if (leadersError) {
+        console.error("Error fetching leaders:", leadersError);
+        throw leadersError;
+      }
       setLeaders(leadersData || []);
+      console.log("Leaders fetched:", leadersData ? leadersData.length : 0);
       
-      // Fetch sermons
-      const { data: sermonsData, error: sermonsError } = await supabase
-        .from('sermons')
-        .select('*')
-        .eq('type', 'sermon')
-        .order('date', { ascending: false });
+      // Try to fetch sermons, but don't fail if the table doesn't exist yet
+      try {
+        const { data: sermonsData, error: sermonsError } = await supabase
+          .from('sermons')
+          .select('*')
+          .eq('type', 'sermon')
+          .order('date', { ascending: false });
+        
+        if (sermonsError) {
+          console.error("Error fetching sermons:", sermonsError);
+        } else {
+          setSermons(sermonsData as SermonType[] || []);
+          console.log("Sermons fetched:", sermonsData ? sermonsData.length : 0);
+        }
+      } catch (error) {
+        console.error("Could not fetch sermons:", error);
+        setSermons([]);
+      }
       
-      if (sermonsError) throw sermonsError;
-      setSermons(sermonsData as SermonType[] || []);
+      // Try to fetch events, but don't fail if the table doesn't exist yet
+      try {
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select('*')
+          .order('date', { ascending: true });
+        
+        if (eventsError) {
+          console.error("Error fetching events:", eventsError);
+        } else {
+          setEvents(eventsData as EventType[] || []);
+          console.log("Events fetched:", eventsData ? eventsData.length : 0);
+        }
+      } catch (error) {
+        console.error("Could not fetch events:", error);
+        setEvents([]);
+      }
       
-      // Fetch events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('events')
-        .select('*')
-        .order('date', { ascending: true });
-      
-      if (eventsError) throw eventsError;
-      setEvents(eventsData as EventType[] || []);
+      console.log("Church data fetch completed");
       
     } catch (error) {
       console.error("Error fetching data:", error);

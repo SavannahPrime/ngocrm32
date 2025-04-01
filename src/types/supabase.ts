@@ -1,4 +1,3 @@
-
 // Temporary type definitions for Supabase tables
 // This file will be used until the auto-generated types are properly updated
 

@@ -46,7 +46,7 @@ const getTribeName = (date: Date) => {
 
 const Register = () => {
   const { toast } = useToast();
-  const { addMember, isLoading } = useChurch();
+  const { addMember, tribes, isLoading } = useChurch();
   const [selectedTribe, setSelectedTribe] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -59,27 +59,29 @@ const Register = () => {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    // Convert date to ISO string for consistency and ensure all fields are non-optional
-    const formattedData = {
-      name: data.name,          // Make these non-optional
-      email: data.email,        // Make these non-optional
-      phone: data.phone,        // Make these non-optional
-      location: data.location,  // Make these non-optional
-      birthDate: data.birthDate.toISOString().split('T')[0],
+  const onSubmit = async (data: FormValues) => {
+    // Convert date to ISO string and format data
+    const memberData = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      address: data.location,
+      birth_date: data.birthDate.toISOString().split('T')[0],
     };
     
     // Add member to the church database
-    addMember(formattedData);
+    const success = await addMember(memberData);
     
-    toast({
-      title: "Registration Successful",
-      description: `Welcome to the ${selectedTribe} tribe! You have been registered as a member.`,
-    });
-    
-    // Reset form
-    form.reset();
-    setSelectedTribe(null);
+    if (success) {
+      toast({
+        title: "Registration Successful",
+        description: `Welcome to the ${selectedTribe} tribe! You have been registered as a member.`,
+      });
+      
+      // Reset form
+      form.reset();
+      setSelectedTribe(null);
+    }
   };
 
   // Update tribe when birth date changes
