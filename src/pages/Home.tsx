@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -21,14 +20,38 @@ import {
   BookOpen 
 } from "lucide-react";
 import { format } from "date-fns";
-import { useChurch } from "@/contexts/ChurchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { SermonType } from "@/types/supabase";
 
 const Home = () => {
-  const { events } = useChurch();
+  const [events, setEvents] = useState([]);
   const [featuredBlogPosts, setFeaturedBlogPosts] = useState<SermonType[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  // Fetch events directly from Supabase
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoadingEvents(true);
+        
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('date', { ascending: true });
+          
+        if (error) throw error;
+        
+        setEvents(data || []);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    
+    fetchEvents();
+  }, []);
 
   // Fetch featured blog posts directly from Supabase
   useEffect(() => {
@@ -339,7 +362,11 @@ const Home = () => {
             </Link>
           </div>
           
-          {upcomingEvents.length > 0 ? (
+          {loadingEvents ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ngo-primary"></div>
+            </div>
+          ) : upcomingEvents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {upcomingEvents.map((event) => (
                 <Card key={event.id}>

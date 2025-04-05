@@ -2,16 +2,17 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { MemberType, ProjectType, EventType, SermonType } from "@/types/supabase";
+import { MemberType, SermonType, EventType, LeaderType, ProjectType } from "@/types/supabase";
 
 // Define context types
 interface NGOContextType {
+  members: MemberType[];
   volunteers: MemberType[];
+  leaders: LeaderType[];
   projects: ProjectType[];
-  sermons: SermonType[];  // Keeping for blog posts
   events: EventType[];
-  addVolunteer: (volunteer: Partial<MemberType>) => Promise<boolean>;
-  getFeaturedSermons: () => SermonType[];
+  addMember: (member: Partial<MemberType>) => Promise<boolean>;
+  getFeaturedProjects: () => ProjectType[];
   getFeaturedEvents: () => EventType[];
   getFeaturedBlogPosts: () => SermonType[];
   isLoading: boolean;
@@ -22,9 +23,10 @@ const NGOContext = createContext<NGOContextType | undefined>(undefined);
 
 // Provider component
 export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
+  const [members, setMembers] = useState<MemberType[]>([]);
   const [volunteers, setVolunteers] = useState<MemberType[]>([]);
+  const [leaders, setLeaders] = useState<LeaderType[]>([]);
   const [projects, setProjects] = useState<ProjectType[]>([]);
-  const [sermons, setSermons] = useState<SermonType[]>([]);
   const [events, setEvents] = useState<EventType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
@@ -35,52 +37,55 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       console.log("Fetching NGO data from Supabase...");
       
-      // Fetch volunteers (previously members)
-      const { data: volunteersData, error: volunteersError } = await supabase
+      // Fetch members/volunteers
+      const { data: membersData, error: membersError } = await supabase
         .from('members')
         .select('*')
         .order('name');
       
-      if (volunteersError) {
-        console.error("Error fetching volunteers:", volunteersError);
-        throw volunteersError;
+      if (membersError) {
+        console.error("Error fetching members:", membersError);
+        throw membersError;
       }
-      setVolunteers(volunteersData as MemberType[] || []);
-      console.log("Volunteers fetched:", volunteersData ? volunteersData.length : 0);
       
-      // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
+      // Split into members and volunteers based on a field (you might need to adjust this logic)
+      const allMembers = membersData as MemberType[] || [];
+      setMembers(allMembers);
+      setVolunteers(allMembers.filter(m => m.is_active)); // Example filter
+      console.log("Members/volunteers fetched:", allMembers ? allMembers.length : 0);
+      
+      // Fetch leaders
+      const { data: leadersData, error: leadersError } = await supabase
+        .from('leaders')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('name');
       
-      if (projectsError) {
-        console.error("Error fetching projects:", projectsError);
-        throw projectsError;
+      if (leadersError) {
+        console.error("Error fetching leaders:", leadersError);
+        throw leadersError;
       }
-      setProjects(projectsData as ProjectType[] || []);
-      console.log("Projects fetched:", projectsData ? projectsData.length : 0);
+      setLeaders(leadersData as LeaderType[] || []);
+      console.log("Leaders fetched:", leadersData ? leadersData.length : 0);
       
-      // Try to fetch sermons (blog posts), but don't fail if the table doesn't exist yet
+      // Try to fetch projects
       try {
-        const { data: sermonsData, error: sermonsError } = await supabase
-          .from('sermons')
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('projects')
           .select('*')
-          .eq('type', 'blog')
-          .order('date', { ascending: false });
+          .order('created_at', { ascending: false });
         
-        if (sermonsError) {
-          console.error("Error fetching blog posts:", sermonsError);
+        if (projectsError) {
+          console.error("Error fetching projects:", projectsError);
         } else {
-          setSermons(sermonsData as SermonType[] || []);
-          console.log("Blog posts fetched:", sermonsData ? sermonsData.length : 0);
+          setProjects(projectsData as ProjectType[] || []);
+          console.log("Projects fetched:", projectsData ? projectsData.length : 0);
         }
       } catch (error) {
-        console.error("Could not fetch blog posts:", error);
-        setSermons([]);
+        console.error("Could not fetch projects:", error);
+        setProjects([]);
       }
       
-      // Try to fetch events, but don't fail if the table doesn't exist yet
+      // Try to fetch events
       try {
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
@@ -117,17 +122,17 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
     fetchData();
   }, []);
 
-  // Add a new volunteer
-  const addVolunteer = async (volunteer: Partial<MemberType>): Promise<boolean> => {
+  // Add a new member/volunteer
+  const addMember = async (member: Partial<MemberType>): Promise<boolean> => {
     try {
       setIsLoading(true);
       
       // Check if required field is present
-      if (!volunteer.name) {
+      if (!member.name) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Volunteer name is required.",
+          description: "Name is required.",
         });
         return false;
       }
@@ -135,34 +140,37 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
       const { data, error } = await supabase
         .from('members')
         .insert({
-          name: volunteer.name,
-          email: volunteer.email || null,
-          phone: volunteer.phone || null,
-          birth_date: volunteer.birth_date || null,
-          address: volunteer.address || null,
-          join_date: volunteer.join_date || new Date().toISOString(),
-          is_active: volunteer.is_active ?? true
+          name: member.name,
+          email: member.email || null,
+          phone: member.phone || null,
+          birth_date: member.birth_date || null,
+          address: member.address || null,
+          join_date: member.join_date || new Date().toISOString(),
+          is_active: member.is_active ?? true
         })
         .select();
       
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setVolunteers(prev => [...prev, data[0] as MemberType]);
+        setMembers(prev => [...prev, data[0] as MemberType]);
+        if (data[0].is_active) {
+          setVolunteers(prev => [...prev, data[0] as MemberType]);
+        }
       }
       
       toast({
         title: "Success",
-        description: "New volunteer added successfully.",
+        description: "New member added successfully.",
       });
       
       return true;
     } catch (error) {
-      console.error("Error adding volunteer:", error);
+      console.error("Error adding member:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add new volunteer. Please try again.",
+        description: "Failed to add new member. Please try again.",
       });
       return false;
     } finally {
@@ -170,9 +178,9 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Get featured sermons
-  const getFeaturedSermons = (): SermonType[] => {
-    return sermons.filter(sermon => sermon.featured);
+  // Get featured projects
+  const getFeaturedProjects = (): ProjectType[] => {
+    return projects.filter(project => project.featured);
   };
 
   // Get featured events
@@ -182,16 +190,17 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Get featured blog posts
   const getFeaturedBlogPosts = (): SermonType[] => {
-    return sermons.filter(sermon => sermon.featured && sermon.type === 'blog');
+    return []; // This needs to be implemented based on your data model
   };
 
   const value = {
+    members,
     volunteers,
+    leaders,
     projects,
-    sermons,
     events,
-    addVolunteer,
-    getFeaturedSermons,
+    addMember,
+    getFeaturedProjects,
     getFeaturedEvents,
     getFeaturedBlogPosts,
     isLoading
@@ -208,7 +217,7 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
 export const useNGO = () => {
   const context = useContext(NGOContext);
   if (context === undefined) {
-    throw new Error("useNGO must be used within a NGOProvider");
+    throw new Error("useNGO must be used within an NGOProvider");
   }
   return context;
 };

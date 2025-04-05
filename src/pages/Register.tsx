@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
-import { useChurch } from "@/contexts/ChurchContext";
+import { useNGO } from "@/contexts/NGOContext";
 import {
   Form,
   FormControl,
@@ -34,20 +34,10 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const getTribeName = (date: Date) => {
-  const month = date.getMonth();
-  const tribes = [
-    "Reuben", "Simeon", "Levi", "Judah", 
-    "Issachar", "Zebulun", "Dan", "Naphtali", 
-    "Gad", "Asher", "Joseph", "Benjamin"
-  ];
-  return tribes[month];
-};
-
 const Register = () => {
   const { toast } = useToast();
-  const { addMember, tribes, isLoading } = useChurch();
-  const [selectedTribe, setSelectedTribe] = useState<string | null>(null);
+  const { addMember, isLoading } = useNGO();
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -69,37 +59,44 @@ const Register = () => {
       birth_date: data.birthDate.toISOString().split('T')[0],
     };
     
-    // Add member to the church database
+    // Add member to the database
     const success = await addMember(memberData);
     
     if (success) {
       toast({
         title: "Registration Successful",
-        description: `Welcome to the ${selectedTribe} tribe! You have been registered as a member.`,
+        description: `Thank you for registering as a volunteer! We will contact you soon.`,
       });
       
       // Reset form
       form.reset();
-      setSelectedTribe(null);
+      setSelectedRegion(null);
     }
   };
 
-  // Update tribe when birth date changes
-  const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      const tribe = getTribeName(date);
-      setSelectedTribe(tribe);
-      form.setValue("birthDate", date);
+  // Update region based on location input
+  const handleLocationChange = (value: string) => {
+    // This is just a placeholder logic, replace with your actual region determination logic
+    if (value.toLowerCase().includes('africa')) {
+      setSelectedRegion('Africa');
+    } else if (value.toLowerCase().includes('asia')) {
+      setSelectedRegion('Asia');
+    } else if (value.toLowerCase().includes('europe')) {
+      setSelectedRegion('Europe');
+    } else if (value.toLowerCase().includes('america')) {
+      setSelectedRegion('Americas');
     } else {
-      setSelectedTribe(null);
+      setSelectedRegion(null);
     }
+    
+    form.setValue("location", value);
   };
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold font-serif text-church-primary">Join Our Church Community</h1>
-        <p className="mt-2 text-gray-600">Register as a member and be part of one of our 12 Tribes based on your birth month</p>
+        <h1 className="text-3xl font-bold text-ngo-primary">Join Our Volunteer Network</h1>
+        <p className="mt-2 text-gray-600">Register as a volunteer and help us make a difference in communities worldwide</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
@@ -176,14 +173,14 @@ const Register = () => {
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={handleDateChange}
+                          onSelect={field.onChange}
                           disabled={(date) => date > new Date()}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
                     <FormDescription>
-                      Your birth month determines your tribe assignment.
+                      You must be at least 18 years old to volunteer.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -195,9 +192,13 @@ const Register = () => {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel>Your Location</FormLabel>
                     <FormControl>
-                      <Input placeholder="City, State" {...field} />
+                      <Input 
+                        placeholder="City, Country" 
+                        {...field} 
+                        onChange={(e) => handleLocationChange(e.target.value)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -205,11 +206,11 @@ const Register = () => {
               />
             </div>
 
-            {/* Display assigned tribe */}
-            {selectedTribe && (
-              <div className="p-4 bg-church-light rounded-md border border-church-primary">
-                <p className="font-medium text-church-primary">
-                  Based on your birth month, you will be assigned to the <span className="font-bold">Tribe of {selectedTribe}</span>
+            {/* Display assigned region */}
+            {selectedRegion && (
+              <div className="p-4 bg-ngo-light rounded-md border border-ngo-primary">
+                <p className="font-medium text-ngo-primary">
+                  Based on your location, you will be assigned to our <span className="font-bold">{selectedRegion} Team</span>
                 </p>
               </div>
             )}
@@ -217,10 +218,10 @@ const Register = () => {
             <div className="pt-4">
               <Button
                 type="submit"
-                className="w-full bg-church-primary hover:bg-church-primary/90"
+                className="w-full bg-ngo-primary hover:bg-ngo-primary/90"
                 disabled={isLoading}
               >
-                {isLoading ? "Registering..." : "Register as Member"}
+                {isLoading ? "Registering..." : "Register as Volunteer"}
               </Button>
             </div>
           </form>
@@ -228,48 +229,36 @@ const Register = () => {
       </div>
 
       <div className="mt-10 bg-gray-50 rounded-lg p-6 shadow-sm">
-        <h2 className="text-xl font-serif font-bold text-church-primary mb-4">The 12 Tribes Assignment</h2>
+        <h2 className="text-xl font-bold text-ngo-primary mb-4">Why Volunteer With Us?</h2>
         <p className="text-gray-600 mb-4">
-          At GlobalCathedral, we organize our members into 12 tribes based on birth months, inspired by the 12 Tribes of Israel.
-          This helps us build stronger community connections and organize church activities.
+          At HopeHarbor, our volunteers are the backbone of our mission to create positive change around the world.
+          When you volunteer with us, you become part of a global community dedicated to making a difference.
         </p>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">January:</span> Reuben
+            <span className="font-bold text-ngo-primary">Meaningful Impact</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">February:</span> Simeon
+            <span className="font-bold text-ngo-primary">Skill Development</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">March:</span> Levi
+            <span className="font-bold text-ngo-primary">Global Network</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">April:</span> Judah
+            <span className="font-bold text-ngo-primary">Cultural Exchange</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">May:</span> Issachar
+            <span className="font-bold text-ngo-primary">Professional Growth</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">June:</span> Zebulun
+            <span className="font-bold text-ngo-primary">Leadership Opportunities</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">July:</span> Dan
+            <span className="font-bold text-ngo-primary">Flexible Commitment</span>
           </div>
           <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">August:</span> Naphtali
-          </div>
-          <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">September:</span> Gad
-          </div>
-          <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">October:</span> Asher
-          </div>
-          <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">November:</span> Joseph
-          </div>
-          <div className="bg-white p-3 rounded shadow-sm">
-            <span className="font-bold text-church-primary">December:</span> Benjamin
+            <span className="font-bold text-ngo-primary">Diverse Projects</span>
           </div>
         </div>
       </div>
