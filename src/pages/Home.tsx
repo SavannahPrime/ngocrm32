@@ -1,277 +1,404 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Heart, BookOpen, Users, Globe } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  ArrowRight, 
+  Calendar, 
+  Clock, 
+  MapPin,
+  Globe,
+  Heart,
+  BookOpen 
+} from "lucide-react";
+import { format } from "date-fns";
 import { useChurch } from "@/contexts/ChurchContext";
+import { supabase } from "@/integrations/supabase/client";
+import { SermonType } from "@/types/supabase";
 
 const Home = () => {
-  const { getFeaturedEvents, getFeaturedBlogPosts } = useChurch();
-  const featuredEvents = getFeaturedEvents().slice(0, 3);
-  const featuredPosts = getFeaturedBlogPosts().slice(0, 3);
+  const { events } = useChurch();
+  const [featuredBlogPosts, setFeaturedBlogPosts] = useState<SermonType[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+
+  // Fetch featured blog posts directly from Supabase
+  useEffect(() => {
+    const fetchFeaturedBlogPosts = async () => {
+      try {
+        setLoadingPosts(true);
+        
+        const { data, error } = await supabase
+          .from('sermons')
+          .select('*')
+          .eq('type', 'blog')
+          .eq('featured', true)
+          .order('date', { ascending: false })
+          .limit(3);
+          
+        if (error) throw error;
+        
+        setFeaturedBlogPosts(data || []);
+      } catch (error) {
+        console.error("Error fetching featured blog posts:", error);
+      } finally {
+        setLoadingPosts(false);
+      }
+    };
+    
+    fetchFeaturedBlogPosts();
+  }, []);
+
+  // Get upcoming events - filter to show only future events
+  const upcomingEvents = events
+    .filter(event => new Date(event.date) >= new Date())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 3);
 
   return (
-    <div className="space-y-20 overflow-hidden">
+    <div>
       {/* Hero Section */}
-      <section className="relative">
-        <div className="bg-ngo-primary">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div className="text-white space-y-6">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  Making A Difference, Together
-                </h1>
-                <p className="text-lg md:text-xl opacity-90">
-                  HopeHarbor is committed to sustainable development, education, and community empowerment around the world.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <Link to="/donate">
-                    <Button size="lg" className="bg-ngo-accent text-ngo-dark hover:bg-ngo-accent/90">
-                      Donate Now
-                    </Button>
-                  </Link>
-                  <Link to="/about">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-ngo-primary">
-                      Learn More
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="relative h-[300px] md:h-[400px] rounded-lg overflow-hidden shadow-xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1469041797191-50ace28483c3?ixlib=rb-4.0.3&q=85&auto=format&fit=crop&w=4752&h=3168"
-                  alt="Children in a classroom" 
-                  className="object-cover h-full w-full"
-                />
-              </div>
-            </div>
-          </div>
+      <section className="relative min-h-[calc(100vh-5rem)] flex items-center bg-ngo-dark overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1508847154043-be5407fcaa5a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" 
+            alt="People in need" 
+            className="w-full h-full object-cover opacity-40"
+          />
         </div>
-        
-        {/* Stats Section */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white rounded-lg shadow-xl p-6">
-            <div className="text-center p-4">
-              <p className="text-4xl font-bold text-ngo-primary">23+</p>
-              <p className="text-gray-600">Countries</p>
-            </div>
-            <div className="text-center p-4">
-              <p className="text-4xl font-bold text-ngo-primary">142</p>
-              <p className="text-gray-600">Projects</p>
-            </div>
-            <div className="text-center p-4">
-              <p className="text-4xl font-bold text-ngo-primary">$2.8M</p>
-              <p className="text-gray-600">Funds Raised</p>
-            </div>
-            <div className="text-center p-4">
-              <p className="text-4xl font-bold text-ngo-primary">78K</p>
-              <p className="text-gray-600">Lives Impacted</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Our Mission */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark mb-4">Our Mission</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We work tirelessly to create sustainable solutions that empower communities and build a better world for future generations.
+        <div className="relative z-10 container mx-auto px-4 py-20 md:py-32">
+          <h1 className="text-4xl md:text-6xl font-bold font-heading text-white leading-tight max-w-4xl">
+            Empowering Communities, <br />
+            <span className="text-ngo-primary">Creating Hope</span>
+          </h1>
+          <p className="mt-6 text-xl text-white max-w-2xl">
+            HopeHarbor is dedicated to sustainable development through education, clean water, and community empowerment programs worldwide.
           </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="mb-4 flex justify-center">
-                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
-                  <Heart size={32} />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-center mb-2">Humanitarian Aid</h3>
-              <p className="text-gray-600 text-center">
-                Providing essential resources and support to those in crisis situations around the world.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="mb-4 flex justify-center">
-                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
-                  <BookOpen size={32} />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-center mb-2">Education</h3>
-              <p className="text-gray-600 text-center">
-                Building schools, training teachers, and creating access to quality education for all.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="mb-4 flex justify-center">
-                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
-                  <Globe size={32} />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-center mb-2">Environment</h3>
-              <p className="text-gray-600 text-center">
-                Protecting natural habitats and promoting sustainable practices in communities.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="pt-6">
-              <div className="mb-4 flex justify-center">
-                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
-                  <Users size={32} />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-center mb-2">Community</h3>
-              <p className="text-gray-600 text-center">
-                Empowering local communities with resources, training, and infrastructure.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="text-center mt-12">
-          <Link to="/mission">
-            <Button>Learn More About Our Mission</Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Featured Project */}
-      <section className="bg-ngo-light py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <h2 className="text-3xl font-bold text-ngo-primary mb-4">Clean Water Initiative</h2>
-              <p className="text-gray-700 mb-6">
-                Our flagship project has been providing clean water solutions to rural communities for over 10 years. With innovative technologies and community education, we've helped reduce waterborne diseases by 70% in our target regions.
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
-                <li>Built 247 wells across 18 villages</li>
-                <li>Installed water filtration systems in 32 schools</li>
-                <li>Trained 450+ local technicians for maintenance</li>
-                <li>Improved health outcomes for over 25,000 people</li>
-              </ul>
-              <Link to="/projects">
-                <Button>View All Projects</Button>
-              </Link>
-            </div>
-            <div className="order-1 lg:order-2 h-[400px] rounded-lg overflow-hidden shadow-xl">
-              <img 
-                src="https://images.unsplash.com/photo-1517022812141-23620dba5c23?ixlib=rb-4.0.3&q=85&auto=format&fit=crop&w=2742&h=1251"
-                alt="Clean water project" 
-                className="object-cover h-full w-full"
-              />
-            </div>
+          <div className="mt-10 flex flex-wrap gap-4">
+            <Link to="/projects">
+              <Button size="lg" className="bg-ngo-primary hover:bg-ngo-primary/90">
+                Our Projects
+              </Button>
+            </Link>
+            <Link to="/donate">
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
+                Donate Now
+              </Button>
+            </Link>
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-ngo-dark to-transparent"></div>
       </section>
 
-      {/* Impact Stories */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark mb-4">Recent Updates</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Stories from the field and news about our ongoing projects
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {featuredPosts.length > 0 ? (
-            featuredPosts.map((post, index) => (
-              <Card key={index} className="overflow-hidden shadow hover:shadow-md transition-shadow">
-                <div className="h-48 bg-gray-200">
-                  {post.image_url ? (
-                    <img 
-                      src={post.image_url} 
-                      alt={post.title} 
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-ngo-light">
-                      <span className="text-ngo-primary font-heading">HopeHarbor</span>
-                    </div>
-                  )}
-                </div>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2 text-ngo-primary">{post.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {new Date(post.date).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
-                  <p className="text-gray-700 mb-4 line-clamp-3">
-                    {post.content.substring(0, 120)}...
-                  </p>
-                  <Link to={`/blog/${post.id}`}>
-                    <Button variant="outline" size="sm">Read More</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            Array(3).fill(0).map((_, index) => (
-              <Card key={index} className="overflow-hidden shadow hover:shadow-md transition-shadow">
-                <div className="h-48 bg-gray-200">
-                  <div className="flex items-center justify-center h-full bg-ngo-light">
-                    <span className="text-ngo-primary font-heading">HopeHarbor</span>
+      {/* Impact Stats */}
+      <section className="bg-white py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-ngo-dark mb-12">
+            Our <span className="text-ngo-primary">Global Impact</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <Card className="text-center border-t-4 border-t-ngo-primary">
+              <CardContent className="pt-6">
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 bg-ngo-light rounded-full">
+                    <Globe className="h-8 w-8 text-ngo-primary" />
                   </div>
                 </div>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2 text-ngo-primary">Project Update {index + 1}</h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {new Date().toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
-                  <p className="text-gray-700 mb-4 line-clamp-3">
-                    Our teams have been working tirelessly on the ground to bring sustainable solutions to communities in need.
-                  </p>
-                  <Link to="/blog">
-                    <Button variant="outline" size="sm">Read More</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))
+                <h3 className="text-3xl font-bold text-ngo-dark">19</h3>
+                <p className="text-gray-600">Countries Reached</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-t-4 border-t-ngo-primary">
+              <CardContent className="pt-6">
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 bg-ngo-light rounded-full">
+                    <Heart className="h-8 w-8 text-ngo-primary" />
+                  </div>
+                </div>
+                <h3 className="text-3xl font-bold text-ngo-dark">250K+</h3>
+                <p className="text-gray-600">Lives Impacted</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-t-4 border-t-ngo-primary">
+              <CardContent className="pt-6">
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 bg-ngo-light rounded-full">
+                    <BookOpen className="h-8 w-8 text-ngo-primary" />
+                  </div>
+                </div>
+                <h3 className="text-3xl font-bold text-ngo-dark">75</h3>
+                <p className="text-gray-600">Active Projects</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-t-4 border-t-ngo-primary">
+              <CardContent className="pt-6">
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 bg-ngo-light rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-ngo-primary"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path></svg>
+                  </div>
+                </div>
+                <h3 className="text-3xl font-bold text-ngo-dark">$4.2M</h3>
+                <p className="text-gray-600">Funds Raised</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Projects */}
+      <section className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark">
+              Our <span className="text-ngo-primary">Featured Projects</span>
+            </h2>
+            <Link to="/projects" className="text-ngo-primary font-medium flex items-center">
+              View All <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="overflow-hidden">
+              <div className="h-48 bg-gray-300">
+                <img 
+                  src="https://images.unsplash.com/photo-1594708767771-a5e9d3c6482c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
+                  alt="Clean Water Project" 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <CardTitle>Clean Water Initiative</CardTitle>
+                  <Badge>Active</Badge>
+                </div>
+                <CardDescription>Providing clean water access to rural communities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-2 w-full bg-gray-200 rounded-full mb-2">
+                  <div className="h-2 bg-ngo-primary rounded-full" style={{ width: '75%' }}></div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">$37,500 raised</span>
+                  <span className="text-gray-500">of $50,000 goal</span>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/projects/1" className="w-full">
+                  <Button className="w-full">Learn More</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+            
+            <Card className="overflow-hidden">
+              <div className="h-48 bg-gray-300">
+                <img 
+                  src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1422&q=80" 
+                  alt="Education Project" 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <CardTitle>Education for All</CardTitle>
+                  <Badge>Active</Badge>
+                </div>
+                <CardDescription>Building schools in underserved areas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-2 w-full bg-gray-200 rounded-full mb-2">
+                  <div className="h-2 bg-ngo-primary rounded-full" style={{ width: '60%' }}></div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">$45,000 raised</span>
+                  <span className="text-gray-500">of $75,000 goal</span>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/projects/2" className="w-full">
+                  <Button className="w-full">Learn More</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+            
+            <Card className="overflow-hidden">
+              <div className="h-48 bg-gray-300">
+                <img 
+                  src="https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
+                  alt="Hunger Relief" 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <CardTitle>Hunger Relief Program</CardTitle>
+                  <Badge>Active</Badge>
+                </div>
+                <CardDescription>Providing meals to homeless populations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-2 w-full bg-gray-200 rounded-full mb-2">
+                  <div className="h-2 bg-ngo-primary rounded-full" style={{ width: '40%' }}></div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">$10,000 raised</span>
+                  <span className="text-gray-500">of $25,000 goal</span>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/projects/3" className="w-full">
+                  <Button className="w-full">Learn More</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest Blog Posts */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark">
+              Latest <span className="text-ngo-primary">Updates</span>
+            </h2>
+            <Link to="/blog" className="text-ngo-primary font-medium flex items-center">
+              View All <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+          
+          {loadingPosts ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ngo-primary"></div>
+            </div>
+          ) : featuredBlogPosts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredBlogPosts.map((post) => (
+                <Card key={post.id} className="overflow-hidden">
+                  <div className="h-48 bg-gray-200">
+                    {post.image_url ? (
+                      <img 
+                        src={post.image_url} 
+                        alt={post.title} 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-ngo-light">
+                        <span className="text-ngo-primary">HopeHarbor</span>
+                      </div>
+                    )}
+                  </div>
+                  <CardHeader>
+                    <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <span>{post.preacher}</span>
+                      <span className="mx-2">•</span>
+                      <span>{format(new Date(post.date), "MMM d, yyyy")}</span>
+                    </div>
+                    <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="line-clamp-3">
+                      {post.content.substring(0, 150)}...
+                    </CardDescription>
+                  </CardContent>
+                  <CardFooter>
+                    <Link to={`/blog/${post.id}`} className="w-full">
+                      <Button variant="outline" className="w-full">Read More</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No featured blog posts found at this time. Check back soon for updates!</p>
+            </div>
           )}
         </div>
-        
-        <div className="text-center mt-12">
-          <Link to="/blog">
-            <Button>View All Updates</Button>
-          </Link>
+      </section>
+
+      {/* Upcoming Events */}
+      <section className="py-16 bg-ngo-light">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark">
+              Upcoming <span className="text-ngo-primary">Events</span>
+            </h2>
+            <Link to="/events" className="text-ngo-primary font-medium flex items-center">
+              View All <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+          
+          {upcomingEvents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {upcomingEvents.map((event) => (
+                <Card key={event.id}>
+                  <CardHeader>
+                    <div className="flex gap-4">
+                      <div className="w-16 h-16 bg-ngo-primary text-white rounded-lg flex flex-col items-center justify-center">
+                        <span className="text-xs">{format(new Date(event.date), "MMM")}</span>
+                        <span className="text-xl font-bold">{format(new Date(event.date), "dd")}</span>
+                      </div>
+                      <div>
+                        <CardTitle>{event.title}</CardTitle>
+                        <CardDescription className="line-clamp-1 mt-1">{event.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{format(new Date(event.date), "EEEE, MMMM d, yyyy")}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{event.time}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{event.location}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full">Register Now</Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No upcoming events at this time. Check back soon!</p>
+            </div>
+          )}
         </div>
       </section>
 
       {/* Call to Action */}
-      <section className="bg-ngo-primary text-white py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Join Our Mission</h2>
-          <p className="text-xl mb-8 max-w-3xl mx-auto">
-            Whether you want to donate, volunteer, or spread the word, there are many ways you can help us make a difference in the world.
+      <section className="py-16 bg-ngo-primary text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Make a Difference Today</h2>
+          <p className="max-w-2xl mx-auto mb-8 text-lg">
+            Join us in our mission to create positive change. Your support can transform lives and communities around the world.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/donate">
-              <Button size="lg" className="bg-ngo-accent text-ngo-dark hover:bg-ngo-accent/90">
-                Donate Now
-              </Button>
+              <Button size="lg" variant="secondary">Donate Now</Button>
             </Link>
             <Link to="/volunteer">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-ngo-primary">
-                Become a Volunteer
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
+                Volunteer
               </Button>
             </Link>
           </div>

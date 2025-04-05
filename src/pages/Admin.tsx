@@ -52,7 +52,7 @@ const Admin = () => {
       {/* Mobile sidebar toggle */}
       <div className="fixed inset-0 flex z-40 md:hidden" style={{ display: sidebarOpen ? 'flex' : 'none' }}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-church-primary">
+        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-ngo-primary">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
               className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -65,22 +65,22 @@ const Admin = () => {
           {/* Mobile sidebar content */}
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
-              <h1 className="text-white font-serif text-xl font-bold">HopeHarbor Admin</h1>
+              <h1 className="text-white font-heading text-xl font-bold">HopeHarbor Admin</h1>
             </div>
             <nav className="mt-5 px-2 space-y-1">
               <AdminNavLinks closeSidebar={closeSidebar} currentPath={location.pathname} />
             </nav>
           </div>
-          <div className="flex-shrink-0 flex border-t border-church-primary/20 p-4">
+          <div className="flex-shrink-0 flex border-t border-ngo-primary/20 p-4">
             <div className="flex items-center">
               <div>
-                <UserRound className="h-8 w-8 text-white bg-church-secondary rounded-full p-1" />
+                <UserRound className="h-8 w-8 text-white bg-ngo-secondary rounded-full p-1" />
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-white">{user?.name || "Admin User"}</p>
                 <Button
                   variant="ghost"
-                  className="mt-1 text-xs text-church-light hover:text-white flex items-center"
+                  className="mt-1 text-xs text-ngo-light hover:text-white flex items-center"
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-1 h-3 w-3" />
@@ -95,25 +95,25 @@ const Admin = () => {
       {/* Static sidebar for desktop */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-64">
-          <div className="flex-1 flex flex-col min-h-0 bg-church-primary">
+          <div className="flex-1 flex flex-col min-h-0 bg-ngo-primary">
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
               <div className="flex items-center flex-shrink-0 px-4">
-                <h1 className="text-white font-serif text-xl font-bold">HopeHarbor Admin</h1>
+                <h1 className="text-white font-heading text-xl font-bold">HopeHarbor Admin</h1>
               </div>
               <nav className="mt-5 flex-1 px-2 space-y-1">
                 <AdminNavLinks closeSidebar={closeSidebar} currentPath={location.pathname} />
               </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t border-church-primary/20 p-4">
+            <div className="flex-shrink-0 flex border-t border-ngo-primary/20 p-4">
               <div className="flex items-center">
                 <div>
-                  <UserRound className="h-8 w-8 text-white bg-church-secondary rounded-full p-1" />
+                  <UserRound className="h-8 w-8 text-white bg-ngo-secondary rounded-full p-1" />
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-white">{user?.name || "Admin User"}</p>
                   <Button
                     variant="ghost"
-                    className="mt-1 text-xs text-church-light hover:text-white flex items-center"
+                    className="mt-1 text-xs text-ngo-light hover:text-white flex items-center"
                     onClick={handleLogout}
                   >
                     <LogOut className="mr-1 h-3 w-3" />
@@ -130,7 +130,7 @@ const Admin = () => {
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         <div className="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3">
           <button
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-church-primary"
+            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ngo-primary"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
