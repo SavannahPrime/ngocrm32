@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -35,12 +36,31 @@ const Projects = () => {
 
         if (error) throw error;
 
-        // Split projects into featured and non-featured
-        const featured = data.filter(project => project.featured === true);
-        const regular = data.filter(project => !project.featured);
-
-        setFeaturedProjects(featured || []);
-        setProjects(regular || []);
+        if (data) {
+          // Check if featured property exists, if not, use a fallback approach
+          // For example, we can consider the first few projects as "featured"
+          // or use a different criterion like funding_goal being high
+          
+          // Option 1: Check if property exists
+          const hasFeaturedProperty = data.some(project => 'featured' in project);
+          
+          if (hasFeaturedProperty) {
+            // If the featured property exists, use it
+            const featured = data.filter(project => project.featured === true);
+            const regular = data.filter(project => !project.featured);
+            setFeaturedProjects(featured);
+            setProjects(regular);
+          } else {
+            // Option 2: Use an alternative approach - show projects with highest funding_goal as featured
+            // Sort by funding_goal (descending) and take the top 3 as featured
+            const sortedByFunding = [...data].sort((a, b) => 
+              (b.funding_goal || 0) - (a.funding_goal || 0)
+            );
+            
+            setFeaturedProjects(sortedByFunding.slice(0, 3));
+            setProjects(sortedByFunding.slice(3));
+          }
+        }
       } catch (error) {
         console.error("Error fetching projects:", error);
       } finally {
