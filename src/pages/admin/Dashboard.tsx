@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, BookOpen, Calendar, DollarSign, TrendingUp, UserPlus, UserCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const { members, leaders, events, projects } = useNGO();
   const [activeTab, setActiveTab] = useState("overview");
   const [tribes, setTribes] = useState([]);
+  const [sermons, setSermons] = useState([]);
   const [stats, setStats] = useState({
     totalMembers: 0,
     activeMembers: 0,
@@ -41,6 +43,28 @@ const AdminDashboard = () => {
     fetchTribes();
   }, []);
 
+  // Fetch sermons data
+  useEffect(() => {
+    const fetchSermons = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sermons')
+          .select('*');
+        
+        if (error) {
+          console.error("Error fetching sermons:", error);
+          return;
+        }
+        
+        setSermons(data || []);
+      } catch (error) {
+        console.error("Error fetching sermons:", error);
+      }
+    };
+    
+    fetchSermons();
+  }, []);
+
   // Calculate dashboard stats
   useEffect(() => {
     const activeMembers = members.filter(member => member.is_active).length;
@@ -64,16 +88,16 @@ const AdminDashboard = () => {
       totalMembers: members.length,
       activeMembers,
       inactiveMembers: members.length - activeMembers,
-      totalSermons: 0,
+      totalSermons: sermons.length,
       totalEvents: events.length,
-      totalBlogPosts: 0,
+      totalBlogPosts: sermons.filter(s => s.type === 'blog').length,
       membersByTribe,
       attendance: {
         labels: attendanceLabels,
         data: attendanceData
       }
     });
-  }, [members, events, tribes]);
+  }, [members, events, tribes, sermons]);
 
   const recentMembers = [...members]
     .sort((a, b) => new Date(b.join_date || '').getTime() - new Date(a.join_date || '').getTime())

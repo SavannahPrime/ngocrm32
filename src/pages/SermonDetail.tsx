@@ -31,7 +31,7 @@ const SermonDetail = () => {
           
         if (error) throw error;
         
-        setSermon(data);
+        setSermon(data as SermonType);
       } catch (error) {
         console.error("Error fetching sermon:", error);
       } finally {
@@ -123,7 +123,7 @@ const SermonDetail = () => {
             </div>
             <div className="flex items-center">
               <Book className="mr-2 h-4 w-4" />
-              <span>{sermon.scripture}</span>
+              <span>{sermon.scripture || sermon.scripture_reference}</span>
             </div>
           </div>
           
@@ -136,7 +136,7 @@ const SermonDetail = () => {
           </div>
           
           <div className="prose prose-lg max-w-none">
-            {sermon.content.split('\n\n').map((paragraph: string, index: number) => (
+            {sermon.content && sermon.content.split('\n\n').map((paragraph: string, index: number) => (
               <p key={index}>{paragraph}</p>
             ))}
           </div>
@@ -156,7 +156,7 @@ const SermonDetail = () => {
           <div className="bg-church-light p-6 rounded-lg">
             <h2 className="text-lg font-bold text-church-primary mb-4">Scripture Reference</h2>
             <div className="p-4 bg-white rounded border border-gray-200 mb-4">
-              <p className="italic text-gray-700">{sermon.scripture}</p>
+              <p className="italic text-gray-700">{sermon.scripture || sermon.scripture_reference}</p>
             </div>
             
             <h2 className="text-lg font-bold text-church-primary mb-2">Preached By</h2>

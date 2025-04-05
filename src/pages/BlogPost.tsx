@@ -31,7 +31,7 @@ const BlogPost = () => {
           
         if (error) throw error;
         
-        setPost(data);
+        setPost(data as SermonType);
       } catch (error) {
         console.error("Error fetching blog post:", error);
       } finally {
@@ -118,7 +118,7 @@ const BlogPost = () => {
       </div>
       
       <div className="prose prose-lg max-w-none">
-        {post.content.split('\n\n').map((paragraph: string, index: number) => (
+        {post.content && post.content.split('\n\n').map((paragraph: string, index: number) => (
           <p key={index}>{paragraph}</p>
         ))}
       </div>

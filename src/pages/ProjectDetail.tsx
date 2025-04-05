@@ -43,14 +43,14 @@ const ProjectDetail = () => {
         if (error) throw error;
         
         if (data) {
-          setProject(data);
+          setProject(data as SermonType);
         } else {
           // If not found in DB, use dummy data
-          setProject(getDummyProject(id));
+          setProject(getDummyProject(id) as unknown as SermonType);
         }
       } catch (error) {
         console.error("Error fetching project:", error);
-        setProject(getDummyProject(id));
+        setProject(getDummyProject(id) as unknown as SermonType);
       } finally {
         setLoading(false);
       }
@@ -60,7 +60,7 @@ const ProjectDetail = () => {
   }, [id]);
   
   // Helper to get dummy project if not found in DB
-  const getDummyProject = (projectId: string): SermonType => {
+  const getDummyProject = (projectId: string) => {
     const dummyProjects = [
       {
         id: "1",
@@ -222,7 +222,7 @@ const ProjectDetail = () => {
       </div>
       
       <div className="prose prose-lg max-w-none">
-        {project.content.split('\n\n').map((paragraph: string, index: number) => (
+        {project.content && project.content.split('\n\n').map((paragraph: string, index: number) => (
           <p key={index}>{paragraph}</p>
         ))}
       </div>

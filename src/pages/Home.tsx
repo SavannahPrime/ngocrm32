@@ -21,10 +21,10 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { SermonType } from "@/types/supabase";
+import { SermonType, EventType } from "@/types/supabase";
 
 const Home = () => {
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<EventType[]>([]);
   const [featuredBlogPosts, setFeaturedBlogPosts] = useState<SermonType[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -42,7 +42,7 @@ const Home = () => {
           
         if (error) throw error;
         
-        setEvents(data || []);
+        setEvents(data as EventType[] || []);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -69,7 +69,7 @@ const Home = () => {
           
         if (error) throw error;
         
-        setFeaturedBlogPosts(data || []);
+        setFeaturedBlogPosts(data as SermonType[] || []);
       } catch (error) {
         console.error("Error fetching featured blog posts:", error);
       } finally {
@@ -331,7 +331,7 @@ const Home = () => {
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="line-clamp-3">
-                      {post.content.substring(0, 150)}...
+                      {post.content ? post.content.substring(0, 150) + '...' : ''}
                     </CardDescription>
                   </CardContent>
                   <CardFooter>

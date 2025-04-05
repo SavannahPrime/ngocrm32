@@ -9,20 +9,22 @@ export interface MemberType {
   address: string | null;
   join_date: string | null;
   is_active: boolean;
-  notes: string | null;
+  notes?: string | null; // Made optional with ?
   tribe_id: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface SermonType {
   id: string;
   title: string;
-  description: string | null;
+  description?: string | null; // Made optional
   preacher: string | null;
-  scripture_reference: string | null;
-  audio_url: string | null;
+  scripture?: string | null; // Added this field which exists in the DB
+  scripture_reference?: string | null; // Made optional
+  audio_url?: string | null; // Made optional
   video_url: string | null;
-  notes_url: string | null;
+  notes_url?: string | null; // Made optional
   date: string;
   type: string; // 'sermon' or 'blog' or other types
   content: string | null; // Full content for blog posts
@@ -30,6 +32,7 @@ export interface SermonType {
   tags: string[] | null;
   featured: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface EventType {
@@ -38,14 +41,15 @@ export interface EventType {
   description: string | null;
   date: string;
   time: string | null;
-  end_time: string | null;
+  end_time?: string | null; // Made optional
   location: string | null;
-  recurring: boolean;
-  recurring_pattern: string | null;
+  recurring?: boolean; // Made optional
+  recurring_pattern?: string | null; // Made optional
   image_url: string | null;
-  registration_url: string | null;
+  registration_url?: string | null; // Made optional
   featured: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface LeaderType {
@@ -54,23 +58,25 @@ export interface LeaderType {
   role: string | null;
   bio: string | null;
   image_url: string | null;
-  email: string | null;
+  email?: string | null; // Made optional
   contact_email: string | null;
   contact_phone: string | null;
   tribe_id: string | null;
   featured: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface TribeType {
   id: string;
   name: string;
   description: string | null;
-  leader_id: string | null;
-  meeting_day: string | null;
-  meeting_time: string | null;
-  meeting_location: string | null;
+  leader_id?: string | null; // Made optional
+  meeting_day?: string | null; // Made optional
+  meeting_time?: string | null; // Made optional
+  meeting_location?: string | null; // Made optional
   created_at: string;
+  updated_at?: string;
 }
 
 export interface ProjectType {
@@ -83,7 +89,7 @@ export interface ProjectType {
   image_url: string;
   start_date: string;
   end_date: string;
-  featured: boolean; // Added this property
+  featured: boolean;
   created_at: string;
   updated_at: string;
 }

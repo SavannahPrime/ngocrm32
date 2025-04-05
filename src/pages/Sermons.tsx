@@ -38,11 +38,11 @@ const Sermons = () => {
         const featured = data.find(sermon => sermon.featured);
         
         if (featured) {
-          setFeaturedSermon(featured);
+          setFeaturedSermon(featured as SermonType);
           // Remove the featured sermon from the regular sermons list
-          setSermons(data.filter(sermon => sermon.id !== featured.id));
+          setSermons((data.filter(sermon => sermon.id !== featured.id)) as SermonType[]);
         } else {
-          setSermons(data);
+          setSermons(data as SermonType[]);
         }
       } catch (error) {
         console.error("Error fetching sermons:", error);
@@ -95,10 +95,10 @@ const Sermons = () => {
                       </div>
                       <div className="mb-2 text-sm">
                         <span className="font-semibold">Scripture: </span>
-                        <span>{featuredSermon.scripture}</span>
+                        <span>{featuredSermon.scripture || featuredSermon.scripture_reference}</span>
                       </div>
                       <CardDescription className="line-clamp-3 mb-4">
-                        {featuredSermon.content.substring(0, 200)}...
+                        {featuredSermon.content ? featuredSermon.content.substring(0, 200) + '...' : ''}
                       </CardDescription>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {(featuredSermon.tags || []).map((tag, index) => (
@@ -152,10 +152,10 @@ const Sermons = () => {
                     <CardContent>
                       <div className="mb-2 text-sm">
                         <span className="font-semibold">Scripture: </span>
-                        <span>{sermon.scripture}</span>
+                        <span>{sermon.scripture || sermon.scripture_reference}</span>
                       </div>
                       <CardDescription className="line-clamp-3">
-                        {sermon.content.substring(0, 150)}...
+                        {sermon.content ? sermon.content.substring(0, 150) + '...' : ''}
                       </CardDescription>
                     </CardContent>
                     <CardFooter>

@@ -42,11 +42,11 @@ const Blog = () => {
         const featured = data.find(post => post.featured);
         
         if (featured) {
-          setFeaturedPost(featured);
+          setFeaturedPost(featured as SermonType);
           // Remove the featured post from the regular posts list
-          setPosts(data.filter(post => post.id !== featured.id));
+          setPosts((data.filter(post => post.id !== featured.id)) as SermonType[]);
         } else {
-          setPosts(data);
+          setPosts(data as SermonType[]);
         }
       } catch (error) {
         console.error("Error fetching blog posts:", error);
@@ -99,7 +99,7 @@ const Blog = () => {
                     <span>{format(new Date(post.date), "MMMM d, yyyy")}</span>
                   </div>
                   <p className="text-gray-600 mb-6 line-clamp-3">
-                    {post.content.substring(0, 150)}...
+                    {post.content ? post.content.substring(0, 150) + '...' : ''}
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {(post.tags || []).map((tag, index) => (
