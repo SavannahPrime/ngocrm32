@@ -83,7 +83,53 @@ export interface ProjectType {
   image_url: string;
   start_date: string;
   end_date: string;
-  featured: boolean;
+  featured: boolean; // Added this property
   created_at: string;
   updated_at: string;
 }
+
+// Utility functions for embedding media
+export const isYouTubeUrl = (url: string): boolean => {
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+export const isGoogleDriveUrl = (url: string): boolean => {
+  return url.includes('drive.google.com');
+};
+
+export const getYouTubeEmbedUrl = (url: string): string => {
+  // Handle youtu.be format
+  if (url.includes('youtu.be')) {
+    const id = url.split('youtu.be/')[1].split('?')[0];
+    return `https://www.youtube.com/embed/${id}`;
+  }
+  
+  // Handle youtube.com format
+  if (url.includes('watch?v=')) {
+    const id = url.split('v=')[1].split('&')[0];
+    return `https://www.youtube.com/embed/${id}`;
+  }
+  
+  // Already an embed url
+  return url;
+};
+
+export const getGoogleDriveEmbedUrl = (url: string): string => {
+  // Check if it's already an embed URL
+  if (url.includes('/preview')) {
+    return url;
+  }
+  
+  // Convert to embed URL
+  if (url.includes('/view')) {
+    return url.replace('/view', '/preview');
+  }
+  
+  // Handle file ID format
+  if (url.includes('id=')) {
+    const id = url.split('id=')[1].split('&')[0];
+    return `https://drive.google.com/file/d/${id}/preview`;
+  }
+  
+  return url;
+};
