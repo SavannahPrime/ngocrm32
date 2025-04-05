@@ -1,30 +1,17 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Water, Infrastructure, BookOpen as Education, Users as Community, Heart as Health } from "lucide-react";
+import { Droplet, Building, BookOpen as Education, Users as Community, Heart as Health } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  funding_goal: number;
-  funding_current: number;
-  image_url: string;
-  start_date: string;
-  end_date: string;
-  featured: boolean;
-}
+import { ProjectType } from "@/types/supabase";
 
 // Helper function to get the right icon for a category
 const getCategoryIcon = (category: string) => {
   const categoryLower = category.toLowerCase();
-  if (categoryLower.includes('water') || categoryLower.includes('clean')) return <Water className="h-4 w-4" />;
-  if (categoryLower.includes('infrastructure') || categoryLower.includes('building')) return <Infrastructure className="h-4 w-4" />;
+  if (categoryLower.includes('water') || categoryLower.includes('clean')) return <Droplet className="h-4 w-4" />;
+  if (categoryLower.includes('infrastructure') || categoryLower.includes('building')) return <Building className="h-4 w-4" />;
   if (categoryLower.includes('education') || categoryLower.includes('school')) return <Education className="h-4 w-4" />;
   if (categoryLower.includes('community')) return <Community className="h-4 w-4" />;
   if (categoryLower.includes('health') || categoryLower.includes('medical')) return <Health className="h-4 w-4" />;
@@ -33,8 +20,8 @@ const getCategoryIcon = (category: string) => {
 
 const Projects = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<ProjectType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,7 +36,7 @@ const Projects = () => {
         if (error) throw error;
 
         // Split projects into featured and non-featured
-        const featured = data.filter(project => project.featured);
+        const featured = data.filter(project => project.featured === true);
         const regular = data.filter(project => !project.featured);
 
         setFeaturedProjects(featured || []);
@@ -113,12 +100,12 @@ const Projects = () => {
                       <div className="flex flex-wrap gap-2 mb-4">
                         {project.status && (
                           <Badge variant="outline" className="flex items-center gap-1 py-1">
-                            <Water className="h-4 w-4" />
+                            <Droplet className="h-4 w-4" />
                             Water
                           </Badge>
                         )}
                         <Badge variant="outline" className="flex items-center gap-1 py-1">
-                          <Infrastructure className="h-4 w-4" />
+                          <Building className="h-4 w-4" />
                           Infrastructure
                         </Badge>
                         <Badge variant="outline" className="flex items-center gap-1 py-1">
@@ -177,7 +164,7 @@ const Projects = () => {
                         Education
                       </Badge>
                       <Badge variant="outline" className="flex items-center gap-1 py-1">
-                        <Infrastructure className="h-4 w-4" />
+                        <Building className="h-4 w-4" />
                         Infrastructure
                       </Badge>
                       <Badge variant="outline" className="flex items-center gap-1 py-1">

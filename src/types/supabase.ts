@@ -1,3 +1,4 @@
+
 // Temporary type definitions for Supabase tables
 // This file will be used until the auto-generated types are properly updated
 
@@ -62,6 +63,21 @@ export interface MemberType {
   tribe_id?: string | null;
   join_date?: string | null;
   is_active?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface ProjectType {
+  id: string;
+  title: string;
+  description: string;
+  status?: string | null;
+  funding_goal?: number | null;
+  funding_current?: number | null;
+  image_url?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  featured?: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
 }

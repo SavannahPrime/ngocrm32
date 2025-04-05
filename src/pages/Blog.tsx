@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { SermonType } from "@/types/supabase";
-import { Water, Infrastructure, BookOpen as Education, Users as Community, Heart as Health } from "lucide-react";
+import { Droplet, Building, BookOpen as Education, Users as Community, Heart as Health } from "lucide-react";
 
 // Helper function to get the right icon for a tag
 const getTagIcon = (tag: string) => {
   const tagLower = tag.toLowerCase();
-  if (tagLower.includes('water') || tagLower.includes('clean')) return <Water className="h-4 w-4" />;
-  if (tagLower.includes('infrastructure') || tagLower.includes('building')) return <Infrastructure className="h-4 w-4" />;
+  if (tagLower.includes('water') || tagLower.includes('clean')) return <Droplet className="h-4 w-4" />;
+  if (tagLower.includes('infrastructure') || tagLower.includes('building')) return <Building className="h-4 w-4" />;
   if (tagLower.includes('education') || tagLower.includes('school')) return <Education className="h-4 w-4" />;
   if (tagLower.includes('community')) return <Community className="h-4 w-4" />;
   if (tagLower.includes('health') || tagLower.includes('medical')) return <Health className="h-4 w-4" />;
