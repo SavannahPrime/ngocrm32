@@ -6,27 +6,27 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-church-dark text-white pt-12 pb-6">
+    <footer className="bg-ngo-dark text-white pt-12 pb-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Church Info */}
+          {/* NGO Info */}
           <div>
-            <h3 className="text-xl font-serif font-bold mb-4">GlobalCathedral</h3>
+            <h3 className="text-xl font-heading font-bold mb-4">HopeHarbor</h3>
             <p className="mb-4">
-              Transforming lives through the power of God's Word and building a
-              community of faith, hope, and love.
+              Empowering communities through sustainable development and education.
+              Together, we can build a better future for all.
             </p>
             <div className="flex space-x-4">
-              <a href="https://facebook.com" className="text-white hover:text-church-accent" aria-label="Facebook">
+              <a href="https://facebook.com" className="text-white hover:text-ngo-accent" aria-label="Facebook">
                 <Facebook size={20} />
               </a>
-              <a href="https://twitter.com" className="text-white hover:text-church-accent" aria-label="Twitter">
+              <a href="https://twitter.com" className="text-white hover:text-ngo-accent" aria-label="Twitter">
                 <Twitter size={20} />
               </a>
-              <a href="https://instagram.com" className="text-white hover:text-church-accent" aria-label="Instagram">
+              <a href="https://instagram.com" className="text-white hover:text-ngo-accent" aria-label="Instagram">
                 <Instagram size={20} />
               </a>
-              <a href="https://youtube.com" className="text-white hover:text-church-accent" aria-label="Youtube">
+              <a href="https://youtube.com" className="text-white hover:text-ngo-accent" aria-label="Youtube">
                 <Youtube size={20} />
               </a>
             </div>
@@ -34,55 +34,55 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-serif font-bold mb-4">Quick Links</h3>
+            <h3 className="text-lg font-heading font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="hover:text-church-accent">Home</Link>
+                <Link to="/" className="hover:text-ngo-accent">Home</Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-church-accent">About Us</Link>
+                <Link to="/about" className="hover:text-ngo-accent">About Us</Link>
               </li>
               <li>
-                <Link to="/sermons" className="hover:text-church-accent">Sermons</Link>
+                <Link to="/projects" className="hover:text-ngo-accent">Projects</Link>
               </li>
               <li>
-                <Link to="/events" className="hover:text-church-accent">Events</Link>
+                <Link to="/events" className="hover:text-ngo-accent">Events</Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:text-church-accent">Blog</Link>
+                <Link to="/blog" className="hover:text-ngo-accent">Blog</Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-church-accent">Contact</Link>
+                <Link to="/contact" className="hover:text-ngo-accent">Contact</Link>
               </li>
             </ul>
           </div>
 
-          {/* Service Times */}
+          {/* Programs */}
           <div>
-            <h3 className="text-lg font-serif font-bold mb-4">Service Times</h3>
+            <h3 className="text-lg font-heading font-bold mb-4">Our Programs</h3>
             <ul className="space-y-2">
               <li className="flex flex-col">
-                <span className="font-semibold">Sunday Service</span>
-                <span>10:00 AM - 11:30 AM</span>
+                <span className="font-semibold">Clean Water Initiative</span>
+                <span>Providing access to clean water</span>
               </li>
               <li className="flex flex-col">
-                <span className="font-semibold">Wednesday Bible Study</span>
-                <span>7:00 PM - 8:30 PM</span>
+                <span className="font-semibold">Education For All</span>
+                <span>Building schools and training teachers</span>
               </li>
               <li className="flex flex-col">
-                <span className="font-semibold">Youth Group</span>
-                <span>Friday, 6:30 PM - 8:00 PM</span>
+                <span className="font-semibold">Community Development</span>
+                <span>Supporting sustainable local economies</span>
               </li>
             </ul>
           </div>
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-serif font-bold mb-4">Contact Us</h3>
+            <h3 className="text-lg font-heading font-bold mb-4">Contact Us</h3>
             <ul className="space-y-4">
               <li className="flex items-start">
                 <MapPin className="w-5 h-5 mr-2 mt-0.5" />
-                <span>123 Faith Street, Sanctuary City, SC 12345</span>
+                <span>123 Impact Avenue, Changemaker City, CM 12345</span>
               </li>
               <li className="flex items-center">
                 <Phone className="w-5 h-5 mr-2" />
@@ -90,7 +90,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
-                <span>info@globalcathedral.org</span>
+                <span>info@hopeharbor.org</span>
               </li>
             </ul>
           </div>
@@ -98,7 +98,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
           <p>
-            &copy; {currentYear} GlobalCathedral Church. All rights reserved.
+            &copy; {currentYear} HopeHarbor NGO. All rights reserved.
           </p>
         </div>
       </div>

@@ -1,271 +1,279 @@
 
-import { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Calendar, MapPin, Clock } from "lucide-react";
+import { Heart, BookOpen, Users, Globe } from "lucide-react";
 import { useChurch } from "@/contexts/ChurchContext";
-import { format } from "date-fns";
-import { SermonType, EventType } from "@/types/supabase";
 
 const Home = () => {
-  const { getFeaturedSermons, getFeaturedEvents, getFeaturedBlogPosts } = useChurch();
-  const [featuredSermons, setFeaturedSermons] = useState<SermonType[]>([]);
-  const [featuredEvents, setFeaturedEvents] = useState<EventType[]>([]);
-  const [featuredBlogs, setFeaturedBlogs] = useState<SermonType[]>([]);
-  
-  useEffect(() => {
-    setFeaturedSermons(getFeaturedSermons().slice(0, 3));
-    setFeaturedEvents(getFeaturedEvents().slice(0, 3));
-    setFeaturedBlogs(getFeaturedBlogPosts().slice(0, 3));
-  }, [getFeaturedSermons, getFeaturedEvents, getFeaturedBlogPosts]);
+  const { getFeaturedEvents, getFeaturedBlogPosts } = useChurch();
+  const featuredEvents = getFeaturedEvents().slice(0, 3);
+  const featuredPosts = getFeaturedBlogPosts().slice(0, 3);
 
   return (
-    <div>
+    <div className="space-y-20 overflow-hidden">
       {/* Hero Section */}
-      <section className="relative h-[80vh] bg-church-primary flex items-center">
-        <div className="absolute inset-0 bg-black/40 z-10"></div>
-        <div className="container mx-auto px-4 relative z-20 text-white">
-          <div className="max-w-3xl">
-            <h1 className="text-5xl md:text-6xl font-bold font-serif mb-4">
-              Welcome to Global Cathedral
-            </h1>
-            <p className="text-xl md:text-2xl mb-8">
-              Join us for worship, community, and spiritual growth.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button asChild size="lg" className="bg-church-secondary hover:bg-church-secondary/90">
-                <Link to="/sermons">Watch Sermons</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
-                <Link to="/events">Upcoming Events</Link>
-              </Button>
+      <section className="relative">
+        <div className="bg-ngo-primary">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="text-white space-y-6">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                  Making A Difference, Together
+                </h1>
+                <p className="text-lg md:text-xl opacity-90">
+                  HopeHarbor is committed to sustainable development, education, and community empowerment around the world.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <Link to="/donate">
+                    <Button size="lg" className="bg-ngo-accent text-ngo-dark hover:bg-ngo-accent/90">
+                      Donate Now
+                    </Button>
+                  </Link>
+                  <Link to="/about">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-ngo-primary">
+                      Learn More
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="relative h-[300px] md:h-[400px] rounded-lg overflow-hidden shadow-xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1469041797191-50ace28483c3?ixlib=rb-4.0.3&q=85&auto=format&fit=crop&w=4752&h=3168"
+                  alt="Children in a classroom" 
+                  className="object-cover h-full w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Stats Section */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white rounded-lg shadow-xl p-6">
+            <div className="text-center p-4">
+              <p className="text-4xl font-bold text-ngo-primary">23+</p>
+              <p className="text-gray-600">Countries</p>
+            </div>
+            <div className="text-center p-4">
+              <p className="text-4xl font-bold text-ngo-primary">142</p>
+              <p className="text-gray-600">Projects</p>
+            </div>
+            <div className="text-center p-4">
+              <p className="text-4xl font-bold text-ngo-primary">$2.8M</p>
+              <p className="text-gray-600">Funds Raised</p>
+            </div>
+            <div className="text-center p-4">
+              <p className="text-4xl font-bold text-ngo-primary">78K</p>
+              <p className="text-gray-600">Lives Impacted</p>
             </div>
           </div>
         </div>
       </section>
-      
-      {/* Service Times */}
-      <section className="py-16 bg-church-light">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold font-serif text-church-primary">Join Us In Worship</h2>
-            <p className="mt-2 text-gray-600">Worship service times for our community</p>
-          </div>
+
+      {/* Our Mission */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark mb-4">Our Mission</h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            We work tirelessly to create sustainable solutions that empower communities and build a better world for future generations.
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="mb-4 flex justify-center">
+                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
+                  <Heart size={32} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Humanitarian Aid</h3>
+              <p className="text-gray-600 text-center">
+                Providing essential resources and support to those in crisis situations around the world.
+              </p>
+            </CardContent>
+          </Card>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="text-center p-6">
-              <CardContent className="pt-6">
-                <h3 className="text-xl font-bold mb-2">Sunday Services</h3>
-                <p className="text-gray-600">
-                  8:00 AM - Early Morning Service<br />
-                  10:30 AM - Main Service<br />
-                  6:00 PM - Evening Service
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="text-center p-6">
-              <CardContent className="pt-6">
-                <h3 className="text-xl font-bold mb-2">Midweek Services</h3>
-                <p className="text-gray-600">
-                  Wednesday 7:00 PM - Bible Study<br />
-                  Friday 6:30 PM - Prayer Meeting
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="text-center p-6">
-              <CardContent className="pt-6">
-                <h3 className="text-xl font-bold mb-2">Youth & Children</h3>
-                <p className="text-gray-600">
-                  Sunday 9:00 AM - Children's Church<br />
-                  Friday 5:00 PM - Youth Service
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="mb-4 flex justify-center">
+                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
+                  <BookOpen size={32} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Education</h3>
+              <p className="text-gray-600 text-center">
+                Building schools, training teachers, and creating access to quality education for all.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="mb-4 flex justify-center">
+                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
+                  <Globe size={32} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Environment</h3>
+              <p className="text-gray-600 text-center">
+                Protecting natural habitats and promoting sustainable practices in communities.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="mb-4 flex justify-center">
+                <div className="p-3 rounded-full bg-ngo-light text-ngo-primary">
+                  <Users size={32} />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Community</h3>
+              <p className="text-gray-600 text-center">
+                Empowering local communities with resources, training, and infrastructure.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="text-center mt-12">
+          <Link to="/mission">
+            <Button>Learn More About Our Mission</Button>
+          </Link>
         </div>
       </section>
-      
-      {/* Featured Sermons */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold font-serif text-church-primary">Recent Sermons</h2>
-              <p className="mt-2 text-gray-600">Listen to our latest teachings and messages</p>
-            </div>
-            <Button asChild variant="ghost" className="flex items-center">
-              <Link to="/sermons">
-                View All <ChevronRight className="ml-1 h-4 w-4" />
+
+      {/* Featured Project */}
+      <section className="bg-ngo-light py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <h2 className="text-3xl font-bold text-ngo-primary mb-4">Clean Water Initiative</h2>
+              <p className="text-gray-700 mb-6">
+                Our flagship project has been providing clean water solutions to rural communities for over 10 years. With innovative technologies and community education, we've helped reduce waterborne diseases by 70% in our target regions.
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
+                <li>Built 247 wells across 18 villages</li>
+                <li>Installed water filtration systems in 32 schools</li>
+                <li>Trained 450+ local technicians for maintenance</li>
+                <li>Improved health outcomes for over 25,000 people</li>
+              </ul>
+              <Link to="/projects">
+                <Button>View All Projects</Button>
               </Link>
-            </Button>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {featuredSermons.map((sermon) => (
-              <Card key={sermon.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <Link to={`/sermons/${sermon.id}`}>
-                  <div className="h-48 bg-gray-200">
-                    {sermon.image_url ? (
-                      <img 
-                        src={sermon.image_url} 
-                        alt={sermon.title} 
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full bg-church-light">
-                        <span className="text-church-primary font-serif">Global Cathedral</span>
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-bold mb-2 line-clamp-1">{sermon.title}</h3>
-                    <div className="flex items-center text-sm text-gray-500 mb-4">
-                      <span>{sermon.preacher}</span>
-                      <span className="mx-2">•</span>
-                      <span>{format(new Date(sermon.date), "MMM d, yyyy")}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {sermon.tags && sermon.tags.slice(0, 3).map((tag, index) => (
-                        <Badge key={index} variant="outline">{tag}</Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Link>
-              </Card>
-            ))}
+            </div>
+            <div className="order-1 lg:order-2 h-[400px] rounded-lg overflow-hidden shadow-xl">
+              <img 
+                src="https://images.unsplash.com/photo-1517022812141-23620dba5c23?ixlib=rb-4.0.3&q=85&auto=format&fit=crop&w=2742&h=1251"
+                alt="Clean water project" 
+                className="object-cover h-full w-full"
+              />
+            </div>
           </div>
         </div>
       </section>
-      
-      {/* Upcoming Events */}
-      <section className="py-16 bg-church-light">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold font-serif text-church-primary">Upcoming Events</h2>
-              <p className="mt-2 text-gray-600">Join us for our upcoming church events</p>
-            </div>
-            <Button asChild variant="ghost" className="flex items-center">
-              <Link to="/events">
-                View All <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {featuredEvents.map((event) => (
-              <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow">
+
+      {/* Impact Stories */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-ngo-dark mb-4">Recent Updates</h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Stories from the field and news about our ongoing projects
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {featuredPosts.length > 0 ? (
+            featuredPosts.map((post, index) => (
+              <Card key={index} className="overflow-hidden shadow hover:shadow-md transition-shadow">
                 <div className="h-48 bg-gray-200">
-                  {event.image_url ? (
+                  {post.image_url ? (
                     <img 
-                      src={event.image_url} 
-                      alt={event.title} 
+                      src={post.image_url} 
+                      alt={post.title} 
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full bg-church-light/50">
-                      <span className="text-church-primary font-serif">Global Cathedral</span>
+                    <div className="flex items-center justify-center h-full bg-ngo-light">
+                      <span className="text-ngo-primary font-heading">HopeHarbor</span>
                     </div>
                   )}
                 </div>
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{event.title}</h3>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      <span>{format(new Date(event.date), "MMMM d, yyyy")}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="mr-2 h-4 w-4" />
-                      <span>{event.time}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="mr-2 h-4 w-4" />
-                      <span>{event.location}</span>
-                    </div>
-                  </div>
-                  <Button asChild className="w-full">
-                    <Link to={`/events#${event.id}`}>
-                      More Info
-                    </Link>
-                  </Button>
+                  <h3 className="font-bold text-lg mb-2 text-ngo-primary">{post.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    {new Date(post.date).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                  <p className="text-gray-700 mb-4 line-clamp-3">
+                    {post.content.substring(0, 120)}...
+                  </p>
+                  <Link to={`/blog/${post.id}`}>
+                    <Button variant="outline" size="sm">Read More</Button>
+                  </Link>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Blog Posts */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold font-serif text-church-primary">From Our Blog</h2>
-              <p className="mt-2 text-gray-600">Read the latest articles from our church</p>
-            </div>
-            <Button asChild variant="ghost" className="flex items-center">
-              <Link to="/blog">
-                View All <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {featuredBlogs.map((post) => (
-              <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <Link to={`/blog/${post.id}`}>
-                  <div className="h-48 bg-gray-200">
-                    {post.image_url ? (
-                      <img 
-                        src={post.image_url} 
-                        alt={post.title} 
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full bg-church-light">
-                        <span className="text-church-primary font-serif">Global Cathedral</span>
-                      </div>
-                    )}
+            ))
+          ) : (
+            Array(3).fill(0).map((_, index) => (
+              <Card key={index} className="overflow-hidden shadow hover:shadow-md transition-shadow">
+                <div className="h-48 bg-gray-200">
+                  <div className="flex items-center justify-center h-full bg-ngo-light">
+                    <span className="text-ngo-primary font-heading">HopeHarbor</span>
                   </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-bold mb-2 line-clamp-1">{post.title}</h3>
-                    <div className="flex items-center text-sm text-gray-500 mb-4">
-                      <span>{post.preacher}</span>
-                      <span className="mx-2">•</span>
-                      <span>{format(new Date(post.date), "MMM d, yyyy")}</span>
-                    </div>
-                    <p className="text-gray-600 line-clamp-3">
-                      {post.content.substring(0, 150)}...
-                    </p>
-                  </CardContent>
-                </Link>
+                </div>
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-lg mb-2 text-ngo-primary">Project Update {index + 1}</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    {new Date().toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                  <p className="text-gray-700 mb-4 line-clamp-3">
+                    Our teams have been working tirelessly on the ground to bring sustainable solutions to communities in need.
+                  </p>
+                  <Link to="/blog">
+                    <Button variant="outline" size="sm">Read More</Button>
+                  </Link>
+                </CardContent>
               </Card>
-            ))}
-          </div>
+            ))
+          )}
+        </div>
+        
+        <div className="text-center mt-12">
+          <Link to="/blog">
+            <Button>View All Updates</Button>
+          </Link>
         </div>
       </section>
-      
+
       {/* Call to Action */}
-      <section className="py-16 bg-church-primary text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold font-serif mb-4">
-            Join Our Community
-          </h2>
-          <p className="text-xl max-w-2xl mx-auto mb-8">
-            Become a part of our church family and grow with us in faith and fellowship.
+      <section className="bg-ngo-primary text-white py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Join Our Mission</h2>
+          <p className="text-xl mb-8 max-w-3xl mx-auto">
+            Whether you want to donate, volunteer, or spread the word, there are many ways you can help us make a difference in the world.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" className="bg-white text-church-primary hover:bg-gray-100">
-              <Link to="/register">Register</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
-              <Link to="/contact">Contact Us</Link>
-            </Button>
+            <Link to="/donate">
+              <Button size="lg" className="bg-ngo-accent text-ngo-dark hover:bg-ngo-accent/90">
+                Donate Now
+              </Button>
+            </Link>
+            <Link to="/volunteer">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-ngo-primary">
+                Become a Volunteer
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

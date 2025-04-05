@@ -10,23 +10,23 @@ import { ChurchProvider } from "./contexts/ChurchContext";
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
 import About from "./pages/About";
-import Beliefs from "./pages/Beliefs";
-import Leadership from "./pages/Leadership";
-import Sermons from "./pages/Sermons";
-import SermonDetail from "./pages/SermonDetail";
+import OurMission from "./pages/OurMission";
+import OurTeam from "./pages/OurTeam";
+import Projects from "./pages/Projects";
+import ProjectDetail from "./pages/ProjectDetail";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Events from "./pages/Events";
 import Contact from "./pages/Contact";
-import Register from "./pages/Register";
+import Volunteer from "./pages/Volunteer";
 import Donate from "./pages/Donate";
 import Admin from "./pages/Admin";
 import AdminMembers from "./pages/admin/Members";
-import AdminSermons from "./pages/admin/Sermons";
+import AdminProjects from "./pages/admin/Projects";
 import AdminBlog from "./pages/admin/Blog";
 import AdminEvents from "./pages/admin/Events";
-import AdminLeadership from "./pages/admin/Leadership";
-import AdminTribes from "./pages/admin/Tribes";
+import AdminTeam from "./pages/admin/Team";
+import AdminPrograms from "./pages/admin/Programs";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -45,15 +45,15 @@ const App = () => (
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="about" element={<About />} />
-                <Route path="beliefs" element={<Beliefs />} />
-                <Route path="leadership" element={<Leadership />} />
-                <Route path="sermons" element={<Sermons />} />
-                <Route path="sermons/:id" element={<SermonDetail />} />
+                <Route path="mission" element={<OurMission />} />
+                <Route path="team" element={<OurTeam />} />
+                <Route path="projects" element={<Projects />} />
+                <Route path="projects/:id" element={<ProjectDetail />} />
                 <Route path="blog" element={<Blog />} />
                 <Route path="blog/:id" element={<BlogPost />} />
                 <Route path="events" element={<Events />} />
                 <Route path="contact" element={<Contact />} />
-                <Route path="register" element={<Register />} />
+                <Route path="volunteer" element={<Volunteer />} />
                 <Route path="donate" element={<Donate />} />
               </Route>
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -61,10 +61,10 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="members" element={<AdminMembers />} />
                 <Route path="blog" element={<AdminBlog />} />
-                <Route path="sermons" element={<AdminSermons />} />
+                <Route path="projects" element={<AdminProjects />} />
                 <Route path="events" element={<AdminEvents />} />
-                <Route path="leadership" element={<AdminLeadership />} />
-                <Route path="tribes" element={<AdminTribes />} />
+                <Route path="team" element={<AdminTeam />} />
+                <Route path="programs" element={<AdminPrograms />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

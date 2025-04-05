@@ -20,24 +20,24 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-church-primary text-white shadow-md">
+    <nav className="bg-ngo-primary text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="font-serif text-2xl font-bold">GlobalCathedral</span>
+              <span className="font-heading text-2xl font-bold">HopeHarbor</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <Link to="/" className="px-3 py-2 rounded-md hover:bg-church-primary/80 text-white">
+            <Link to="/" className="px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white">
               Home
             </Link>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="px-3 py-2 text-white flex items-center hover:bg-church-primary/80">
+                <Button variant="ghost" className="px-3 py-2 text-white flex items-center hover:bg-ngo-primary/80">
                   About <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -46,41 +46,41 @@ const Navbar = () => {
                   <Link to="/about" className="w-full">Our Story</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/beliefs" className="w-full">Our Beliefs</Link>
+                  <Link to="/mission" className="w-full">Our Mission</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/leadership" className="w-full">Leadership</Link>
+                  <Link to="/team" className="w-full">Our Team</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Link to="/sermons" className="px-3 py-2 rounded-md hover:bg-church-primary/80 text-white">
-              Sermons
+            <Link to="/projects" className="px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white">
+              Projects
             </Link>
-            <Link to="/events" className="px-3 py-2 rounded-md hover:bg-church-primary/80 text-white">
+            <Link to="/events" className="px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white">
               Events
             </Link>
-            <Link to="/blog" className="px-3 py-2 rounded-md hover:bg-church-primary/80 text-white">
+            <Link to="/blog" className="px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white">
               Blog
             </Link>
-            <Link to="/contact" className="px-3 py-2 rounded-md hover:bg-church-primary/80 text-white">
+            <Link to="/contact" className="px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white">
               Contact
             </Link>
           </div>
 
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <Link to="/register">
-              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-church-primary">
-                Join Us
+            <Link to="/volunteer">
+              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-ngo-primary">
+                Volunteer
               </Button>
             </Link>
             <Link to="/donate">
-              <Button className="bg-church-accent text-church-dark hover:bg-church-accent/90">
+              <Button className="bg-ngo-accent text-ngo-dark hover:bg-ngo-accent/90">
                 Donate
               </Button>
             </Link>
             {isAuthenticated && (
-              <Link to="/admin" className="px-3 py-2 rounded-md bg-church-secondary hover:bg-church-secondary/90 text-white">
+              <Link to="/admin" className="px-3 py-2 rounded-md bg-ngo-secondary hover:bg-ngo-secondary/90 text-white">
                 Admin
               </Link>
             )}
@@ -90,7 +90,7 @@ const Navbar = () => {
           <div className="flex md:hidden items-center">
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-white hover:bg-church-primary/80"
+              className="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-white hover:bg-ngo-primary/80"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -109,70 +109,70 @@ const Navbar = () => {
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
           <Link
             to="/"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
             Home
           </Link>
           <Link
             to="/about"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
             Our Story
           </Link>
           <Link
-            to="/beliefs"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            to="/mission"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
-            Our Beliefs
+            Our Mission
           </Link>
           <Link
-            to="/leadership"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            to="/team"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
-            Leadership
+            Our Team
           </Link>
           <Link
-            to="/sermons"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            to="/projects"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
-            Sermons
+            Projects
           </Link>
           <Link
             to="/events"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
             Events
           </Link>
           <Link
             to="/blog"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
             Blog
           </Link>
           <Link
             to="/contact"
-            className="block px-3 py-2 rounded-md hover:bg-church-primary/80 text-white"
+            className="block px-3 py-2 rounded-md hover:bg-ngo-primary/80 text-white"
             onClick={toggleMenu}
           >
             Contact
           </Link>
           <Link
-            to="/register"
-            className="block px-3 py-2 rounded-md bg-white text-church-primary"
+            to="/volunteer"
+            className="block px-3 py-2 rounded-md bg-white text-ngo-primary"
             onClick={toggleMenu}
           >
-            Join Us
+            Volunteer
           </Link>
           <Link
             to="/donate"
-            className="block px-3 py-2 rounded-md bg-church-accent text-church-dark"
+            className="block px-3 py-2 rounded-md bg-ngo-accent text-ngo-dark"
             onClick={toggleMenu}
           >
             Donate
@@ -180,7 +180,7 @@ const Navbar = () => {
           {isAuthenticated && (
             <Link
               to="/admin"
-              className="block px-3 py-2 rounded-md bg-church-secondary text-white"
+              className="block px-3 py-2 rounded-md bg-ngo-secondary text-white"
               onClick={toggleMenu}
             >
               Admin
