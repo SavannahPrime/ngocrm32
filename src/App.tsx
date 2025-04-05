@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ChurchProvider } from "./contexts/ChurchContext";
+import { NGOProvider } from "./contexts/NGOContext";
 
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
@@ -37,7 +37,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <ChurchProvider>
+        <NGOProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -69,7 +69,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </ChurchProvider>
+        </NGOProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

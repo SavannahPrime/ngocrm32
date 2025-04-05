@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -61,6 +62,13 @@ const AdminBlog = () => {
   
   const [tagsInput, setTagsInput] = useState("");
 
+  // Suggested NGO-focused tags
+  const suggestedTags = [
+    "Water", "Education", "Health", "Infrastructure", "Community", 
+    "Sustainability", "Women Empowerment", "Climate", "Children", 
+    "Food Security", "Disaster Relief", "Poverty Reduction"
+  ];
+
   // Fetch blog posts
   const fetchBlogPosts = async () => {
     try {
@@ -118,10 +126,19 @@ const AdminBlog = () => {
     setTagsInput(e.target.value);
   };
 
+  // Add a tag from suggestions
+  const addTag = (tag: string) => {
+    const currentTags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+    if (!currentTags.includes(tag)) {
+      const newTags = [...currentTags, tag].join(', ');
+      setTagsInput(newTags);
+    }
+  };
+
   // Add blog post
   const handleAddBlogPost = async () => {
     try {
-      if (!formData.title || !formData.preacher || !formData.content || !formData.scripture) {
+      if (!formData.title || !formData.preacher || !formData.content) {
         uiToast({
           variant: "destructive",
           title: "Missing Information",
@@ -138,7 +155,7 @@ const AdminBlog = () => {
           title: formData.title,
           preacher: formData.preacher,
           date: formData.date || new Date().toISOString().split('T')[0],
-          scripture: formData.scripture,
+          scripture: formData.scripture || "Project Update", // Default value for NGO content
           content: formData.content,
           video_url: formData.video_url,
           image_url: formData.image_url,
@@ -187,7 +204,7 @@ const AdminBlog = () => {
     try {
       if (!selectedPost) return;
       
-      if (!formData.title || !formData.preacher || !formData.content || !formData.scripture) {
+      if (!formData.title || !formData.preacher || !formData.content) {
         uiToast({
           variant: "destructive",
           title: "Missing Information",
@@ -204,7 +221,7 @@ const AdminBlog = () => {
           title: formData.title,
           preacher: formData.preacher,
           date: formData.date,
-          scripture: formData.scripture,
+          scripture: formData.scripture || "Project Update",
           content: formData.content,
           video_url: formData.video_url,
           image_url: formData.image_url,
@@ -296,14 +313,14 @@ const AdminBlog = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold font-serif text-church-primary">Blog Management</h1>
+        <h1 className="text-3xl font-bold text-ngo-primary">Blog Management</h1>
         <Button 
           onClick={() => {
             setFormData({
               title: "",
               preacher: "",
               date: new Date().toISOString().split('T')[0],
-              scripture: "",
+              scripture: "Project Update",  // Default for NGO
               content: "",
               video_url: "",
               image_url: "",
@@ -313,7 +330,7 @@ const AdminBlog = () => {
             setTagsInput("");
             setIsAddDialogOpen(true);
           }} 
-          className="bg-church-primary hover:bg-church-primary/90"
+          className="bg-ngo-primary hover:bg-ngo-primary/90"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Blog Post
@@ -322,7 +339,7 @@ const AdminBlog = () => {
       
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-church-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ngo-primary"></div>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -399,7 +416,7 @@ const AdminBlog = () => {
           <DialogHeader>
             <DialogTitle>Add New Blog Post</DialogTitle>
             <DialogDescription>
-              Create a new blog post to be published on the website.
+              Create a new project update or story to be published on the website.
             </DialogDescription>
           </DialogHeader>
           
@@ -441,11 +458,11 @@ const AdminBlog = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="scripture">Scripture/Reference *</Label>
+                <Label htmlFor="scripture">Category/Region *</Label>
                 <Input
                   id="scripture"
                   name="scripture"
-                  placeholder="Enter scripture or reference"
+                  placeholder="Enter category or region"
                   value={formData.scripture}
                   onChange={handleInputChange}
                 />
@@ -486,10 +503,22 @@ const AdminBlog = () => {
               <Label htmlFor="tags">Tags (comma-separated)</Label>
               <Input
                 id="tags"
-                placeholder="faith, inspiration, prayer"
+                placeholder="water, education, health"
                 value={tagsInput}
                 onChange={handleTagsChange}
               />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {suggestedTags.map((tag) => (
+                  <Badge 
+                    key={tag} 
+                    variant="outline" 
+                    className="cursor-pointer hover:bg-gray-100"
+                    onClick={() => addTag(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -562,11 +591,11 @@ const AdminBlog = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit-scripture">Scripture/Reference *</Label>
+                <Label htmlFor="edit-scripture">Category/Region *</Label>
                 <Input
                   id="edit-scripture"
                   name="scripture"
-                  placeholder="Enter scripture or reference"
+                  placeholder="Enter category or region"
                   value={formData.scripture}
                   onChange={handleInputChange}
                 />
@@ -607,10 +636,22 @@ const AdminBlog = () => {
               <Label htmlFor="edit-tags">Tags (comma-separated)</Label>
               <Input
                 id="edit-tags"
-                placeholder="faith, inspiration, prayer"
+                placeholder="water, education, health"
                 value={tagsInput}
                 onChange={handleTagsChange}
               />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {suggestedTags.map((tag) => (
+                  <Badge 
+                    key={tag} 
+                    variant="outline" 
+                    className="cursor-pointer hover:bg-gray-100"
+                    onClick={() => addTag(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">

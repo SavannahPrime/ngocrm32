@@ -1,569 +1,375 @@
-// At the top of the file, import the database client with the new types
-import { supabase } from "@/integrations/supabase/client";
-import { MemberType, TribeType } from "@/types/supabase";
-import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Edit, Trash2, PlusCircle } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Download, Users, UserPlus, Calendar, PieChart as PieChartIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+
+interface Volunteer {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  address: string | null;
+  join_date: string | null;
+  is_active: boolean;
+}
+
+interface VolunteerStats {
+  totalVolunteers: number;
+  activeVolunteers: number;
+  inactiveVolunteers: number;
+  newThisMonth: number;
+  newThisYear: number;
+}
 
 const AdminMembers = () => {
-  const { toast } = useToast();
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [filteredVolunteers, setFilteredVolunteers] = useState<Volunteer[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [members, setMembers] = useState<MemberType[]>([]);
-  const [tribes, setTribes] = useState<TribeType[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<MemberType | null>(null);
-  
-  const [formData, setFormData] = useState<Partial<MemberType>>({
-    name: "",
-    email: "",
-    phone: "",
-    birth_date: "",
-    address: "",
-    tribe_id: null,
-    join_date: "",
-    is_active: true
+  const [stats, setStats] = useState<VolunteerStats>({
+    totalVolunteers: 0,
+    activeVolunteers: 0,
+    inactiveVolunteers: 0,
+    newThisMonth: 0,
+    newThisYear: 0
   });
-  
-  // Fetch members and tribes
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-    // Fetch members
-    const { data: memberData, error: memberError } = await supabase
-      .from('members')
-      .select('*')
-      .order('name');
-      
-    if (memberError) throw memberError;
-    
-    // Fetch tribes
-    const { data: tribeData, error: tribeError } = await supabase
-      .from('tribes')
-      .select('*')
-      .order('name');
-      
-    if (tribeError) throw tribeError;
-    
-    setMembers(memberData as unknown as MemberType[] || []);
-    setTribes(tribeData as unknown as TribeType[] || []);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "Failed to load data. Please try again.",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-  
+
   useEffect(() => {
-    fetchData();
+    fetchVolunteers();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredVolunteers(volunteers);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredVolunteers(
+        volunteers.filter(
+          volunteer =>
+            volunteer.name.toLowerCase().includes(query) ||
+            (volunteer.email && volunteer.email.toLowerCase().includes(query)) ||
+            (volunteer.phone && volunteer.phone.includes(query))
+        )
+      );
+    }
+  }, [searchQuery, volunteers]);
 
-  const handleSelectChange = (value: string) => {
-    setFormData({ ...formData, tribe_id: value });
-  };
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData({ ...formData, [name]: checked });
-  };
-
-  const handleAddMember = async () => {
+  const fetchVolunteers = async () => {
     try {
-      if (!formData.name) {
-        toast({
-          variant: "destructive",
-          title: "Missing Information",
-          description: "Please provide a name for the member.",
-        });
-        return;
-      }
-      
+      setLoading(true);
       const { data, error } = await supabase
         .from('members')
-        .insert({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          birth_date: formData.birth_date,
-          address: formData.address,
-          tribe_id: formData.tribe_id,
-          join_date: formData.join_date || new Date().toISOString(),
-          is_active: true
-        })
-        .select();
-        
+        .select('*')
+        .order('join_date', { ascending: false });
+
       if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Member has been added successfully!",
-      });
-      
-      setIsAddDialogOpen(false);
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        birth_date: "",
-        address: "",
-        tribe_id: null,
-        join_date: "",
-        is_active: true
-      });
-      fetchData();
-    } catch (error: any) {
-      console.error("Error adding member:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to add member: ${error.message}`,
-      });
+
+      setVolunteers(data || []);
+      setFilteredVolunteers(data || []);
+      calculateStats(data || []);
+    } catch (error) {
+      console.error("Error fetching volunteers:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEditMember = async () => {
-    try {
-      if (!selectedMember) return;
-      
-      if (!formData.name) {
-        toast({
-          variant: "destructive",
-          title: "Missing Information",
-          description: "Please provide a name for the member.",
-        });
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('members')
-        .update({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          birth_date: formData.birth_date,
-          address: formData.address,
-          tribe_id: formData.tribe_id,
-          join_date: formData.join_date,
-          is_active: formData.is_active,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedMember.id);
-        
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Member has been updated successfully!",
-      });
-      
-      setIsEditDialogOpen(false);
-      setSelectedMember(null);
-      fetchData();
-    } catch (error: any) {
-      console.error("Error updating member:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to update member: ${error.message}`,
-      });
-    }
-  };
+  const calculateStats = (volunteerData: Volunteer[]) => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
 
-  const handleDeleteMember = async () => {
-    try {
-      if (!selectedMember) return;
-      
-      const { error } = await supabase
-        .from('members')
-        .delete()
-        .eq('id', selectedMember.id);
-        
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Member has been deleted successfully!",
-      });
-      
-      setIsDeleteDialogOpen(false);
-      setSelectedMember(null);
-      fetchData();
-    } catch (error: any) {
-      console.error("Error deleting member:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to delete member: ${error.message}`,
-      });
-    }
-  };
+    const activeVolunteers = volunteerData.filter(vol => vol.is_active).length;
+    const inactiveVolunteers = volunteerData.length - activeVolunteers;
 
-  const handleOpenEditDialog = (member: MemberType) => {
-    setSelectedMember(member);
-    setFormData({
-      name: member.name,
-      email: member.email,
-      phone: member.phone,
-      birth_date: member.birth_date,
-      address: member.address,
-      tribe_id: member.tribe_id,
-      join_date: member.join_date,
-      is_active: member.is_active
+    const newThisMonth = volunteerData.filter(vol => {
+      if (!vol.join_date) return false;
+      const joinDate = new Date(vol.join_date);
+      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+    }).length;
+
+    const newThisYear = volunteerData.filter(vol => {
+      if (!vol.join_date) return false;
+      const joinDate = new Date(vol.join_date);
+      return joinDate.getFullYear() === currentYear;
+    }).length;
+
+    setStats({
+      totalVolunteers: volunteerData.length,
+      activeVolunteers,
+      inactiveVolunteers,
+      newThisMonth,
+      newThisYear
     });
-    setIsEditDialogOpen(true);
   };
 
-  const handleOpenDeleteDialog = (member: MemberType) => {
-    setSelectedMember(member);
-    setIsDeleteDialogOpen(true);
+  const exportToCSV = () => {
+    // Create CSV content
+    const headers = ['Name', 'Email', 'Phone', 'Address', 'Join Date', 'Status'];
+    const csvRows = [headers];
+
+    filteredVolunteers.forEach(volunteer => {
+      const row = [
+        volunteer.name,
+        volunteer.email || 'N/A',
+        volunteer.phone || 'N/A',
+        volunteer.address || 'N/A',
+        volunteer.join_date ? format(new Date(volunteer.join_date), 'yyyy-MM-dd') : 'N/A',
+        volunteer.is_active ? 'Active' : 'Inactive'
+      ];
+      csvRows.push(row);
+    });
+
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `volunteers-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
+
+  // Monthly volunteer sign-up data (example - you would generate this from real data)
+  const getMonthlySignups = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthCounts = new Array(12).fill(0);
+    
+    volunteers.forEach(volunteer => {
+      if (volunteer.join_date) {
+        const joinDate = new Date(volunteer.join_date);
+        const month = joinDate.getMonth();
+        if (joinDate.getFullYear() === new Date().getFullYear()) {
+          monthCounts[month]++;
+        }
+      }
+    });
+    
+    return months.map((month, index) => ({
+      name: month,
+      count: monthCounts[index]
+    }));
+  };
+
+  const pieChartData = [
+    { name: 'Active', value: stats.activeVolunteers },
+    { name: 'Inactive', value: stats.inactiveVolunteers }
+  ];
+
+  const COLORS = ['#0088FE', '#FF8042'];
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold font-serif text-church-primary">Member Management</h1>
-        <Button 
-          onClick={() => {
-            setFormData({
-              name: "",
-              email: "",
-              phone: "",
-              birth_date: "",
-              address: "",
-              tribe_id: null,
-              join_date: "",
-              is_active: true
-            });
-            setIsAddDialogOpen(true);
-          }} 
-          className="bg-church-primary hover:bg-church-primary/90"
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add New Member
-        </Button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Volunteer Management</h1>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center" 
+            onClick={exportToCSV}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button className="flex items-center" onClick={() => window.location.href = '/volunteer'}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Volunteer
+          </Button>
+        </div>
       </div>
-      
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-church-primary"></div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Tribe</TableHead>
-                <TableHead>Join Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.length > 0 ? (
-                members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.email || member.phone || "-"}</TableCell>
-                    <TableCell>
-                      {tribes.find(tribe => tribe.id === member.tribe_id)?.name || "Unassigned"}
-                    </TableCell>
-                    <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : "-"}</TableCell>
-                    <TableCell>{member.is_active ? "Active" : "Inactive"}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleOpenEditDialog(member)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Member
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-red-600" 
-                            onClick={() => handleOpenDeleteDialog(member)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Member
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Volunteers</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalVolunteers}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.newThisMonth} new this month
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Active Volunteers</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeVolunteers}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.activeVolunteers > 0 
+                ? `${Math.round((stats.activeVolunteers / stats.totalVolunteers) * 100)}% of total` 
+                : '0% of total'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">New This Year</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.newThisYear}</div>
+            <p className="text-xs text-muted-foreground">Since January 1st</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Retention Rate</CardTitle>
+            <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats.totalVolunteers > 0 
+                ? `${Math.round((stats.activeVolunteers / stats.totalVolunteers) * 100)}%` 
+                : '0%'}
+            </div>
+            <p className="text-xs text-muted-foreground">Active vs. Inactive</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Volunteer Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Volunteer Sign-ups (This Year)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={getMonthlySignups()}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#0088FE" name="New Volunteers" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Volunteer List */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <CardTitle>All Volunteers</CardTitle>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search volunteers..."
+                className="pl-8 w-full md:w-[300px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Join Date</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-gray-500">
-                    No members found. Click "Add New Member" to create one.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-      
-      {/* Add Member Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Member</DialogTitle>
-            <DialogDescription>
-              Create a new member record.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="Enter member name"
-                value={formData.name || ""}
-                onChange={handleInputChange}
-              />
+                </TableHeader>
+                <TableBody>
+                  {filteredVolunteers.length > 0 ? (
+                    filteredVolunteers.map((volunteer) => (
+                      <TableRow key={volunteer.id}>
+                        <TableCell className="font-medium">{volunteer.name}</TableCell>
+                        <TableCell>{volunteer.email || "—"}</TableCell>
+                        <TableCell>{volunteer.phone || "—"}</TableCell>
+                        <TableCell>
+                          {volunteer.join_date 
+                            ? format(new Date(volunteer.join_date), "MMM d, yyyy") 
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            volunteer.is_active 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                            {volunteer.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No volunteers found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter member email"
-                value={formData.email || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                name="phone"
-                placeholder="Enter member phone"
-                value={formData.phone || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="birth_date">Birth Date</Label>
-              <Input
-                id="birth_date"
-                name="birth_date"
-                type="date"
-                value={formData.birth_date || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                name="address"
-                placeholder="Enter member address"
-                rows={3}
-                value={formData.address || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="tribe_id">Tribe</Label>
-              <Select onValueChange={handleSelectChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a tribe" defaultValue={formData.tribe_id || ""}/>
-                </SelectTrigger>
-                <SelectContent>
-                  {tribes.map(tribe => (
-                    <SelectItem key={tribe.id} value={tribe.id}>{tribe.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddMember}>Add Member</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Member Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Member</DialogTitle>
-            <DialogDescription>
-              Update member information.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                name="name"
-                placeholder="Enter member name"
-                value={formData.name || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                name="email"
-                type="email"
-                placeholder="Enter member email"
-                value={formData.email || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-phone">Phone</Label>
-              <Input
-                id="edit-phone"
-                name="phone"
-                placeholder="Enter member phone"
-                value={formData.phone || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-birth_date">Birth Date</Label>
-              <Input
-                id="edit-birth_date"
-                name="birth_date"
-                type="date"
-                value={formData.birth_date || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-address">Address</Label>
-              <Textarea
-                id="edit-address"
-                name="address"
-                placeholder="Enter member address"
-                rows={3}
-                value={formData.address || ""}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-tribe_id">Tribe</Label>
-              <Select 
-                onValueChange={handleSelectChange}
-                defaultValue={formData.tribe_id || ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a tribe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tribes.map(tribe => (
-                    <SelectItem key={tribe.id} value={tribe.id}>{tribe.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="is_active">Active</Label>
-              <Input
-                id="is_active"
-                name="is_active"
-                type="checkbox"
-                checked={formData.is_active === true}
-                onChange={handleCheckboxChange}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditMember}>Update Member</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{selectedMember?.name}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteMember}>
-              Delete Member
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
