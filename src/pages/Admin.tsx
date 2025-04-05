@@ -65,7 +65,7 @@ const Admin = () => {
           {/* Mobile sidebar content */}
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
-              <h1 className="text-white font-serif text-xl font-bold">GlobalCathedral Admin</h1>
+              <h1 className="text-white font-serif text-xl font-bold">HopeHarbor Admin</h1>
             </div>
             <nav className="mt-5 px-2 space-y-1">
               <AdminNavLinks closeSidebar={closeSidebar} currentPath={location.pathname} />
@@ -98,7 +98,7 @@ const Admin = () => {
           <div className="flex-1 flex flex-col min-h-0 bg-church-primary">
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
               <div className="flex items-center flex-shrink-0 px-4">
-                <h1 className="text-white font-serif text-xl font-bold">GlobalCathedral Admin</h1>
+                <h1 className="text-white font-serif text-xl font-bold">HopeHarbor Admin</h1>
               </div>
               <nav className="mt-5 flex-1 px-2 space-y-1">
                 <AdminNavLinks closeSidebar={closeSidebar} currentPath={location.pathname} />
@@ -168,18 +168,13 @@ const AdminNavLinks = ({ closeSidebar, currentPath }: AdminNavLinksProps) => {
       icon: <Users className="mr-3 h-5 w-5" />
     },
     {
-      name: "Tribes",
-      path: "/admin/tribes",
-      icon: <Landmark className="mr-3 h-5 w-5" />
-    },
-    {
       name: "Blog",
       path: "/admin/blog",
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="mr-3 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
     },
     {
-      name: "Sermons",
-      path: "/admin/sermons",
+      name: "Projects",
+      path: "/admin/projects",
       icon: <BookOpen className="mr-3 h-5 w-5" />
     },
     {
@@ -188,9 +183,14 @@ const AdminNavLinks = ({ closeSidebar, currentPath }: AdminNavLinksProps) => {
       icon: <Calendar className="mr-3 h-5 w-5" />
     },
     {
-      name: "Leadership",
-      path: "/admin/leadership",
+      name: "Team",
+      path: "/admin/team",
       icon: <Award className="mr-3 h-5 w-5" />
+    },
+    {
+      name: "Programs",
+      path: "/admin/programs",
+      icon: <Landmark className="mr-3 h-5 w-5" />
     }
   ];
 
