@@ -5,7 +5,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader, Plus, Search, Trash2, Edit } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
+// Mock data for programs
+const MOCK_PROGRAMS_DATA = [
+  {
+    id: "1",
+    title: "Youth Empowerment Workshop",
+    description: "Weekly workshops for underprivileged youth",
+    status: "active",
+    category: "Education",
+    participants: 25,
+    created_at: "2025-03-10T08:30:00.000Z"
+  },
+  {
+    id: "2",
+    title: "Community Health Outreach",
+    description: "Monthly health screenings in local communities",
+    status: "active",
+    category: "Health",
+    participants: 150,
+    created_at: "2025-02-15T14:00:00.000Z"
+  },
+  {
+    id: "3",
+    title: "Summer Reading Program",
+    description: "Reading initiative for children during summer break",
+    status: "completed",
+    category: "Education",
+    participants: 75,
+    created_at: "2024-08-01T09:45:00.000Z"
+  },
+  {
+    id: "4",
+    title: "Senior Support Network",
+    description: "Providing assistance to elderly community members",
+    status: "pending",
+    category: "Community",
+    participants: 50,
+    created_at: "2025-04-01T11:15:00.000Z"
+  }
+];
 
 const AdminPrograms = () => {
   const [programs, setPrograms] = useState([]);
@@ -20,14 +59,11 @@ const AdminPrograms = () => {
   const fetchPrograms = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      setPrograms(data || []);
+      // Using mock data instead of real database call
+      setTimeout(() => {
+        setPrograms(MOCK_PROGRAMS_DATA);
+        setLoading(false);
+      }, 800); // Simulate network delay
     } catch (error) {
       console.error('Error fetching programs:', error);
       toast({
@@ -35,7 +71,6 @@ const AdminPrograms = () => {
         description: "Could not load programs. Please try again later.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

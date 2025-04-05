@@ -1,5 +1,5 @@
 
-export type TablesNames = 'events' | 'sermons' | 'tribes' | 'members' | 'leaders';
+export type TablesNames = 'events' | 'sermons' | 'tribes' | 'members' | 'leaders' | 'programs' | 'projects' | 'team_members';
 
 export interface Database {
   public: {
@@ -212,6 +212,121 @@ export interface Database {
             referencedColumns: ["id"];
           }
         ];
+      };
+      // Add new table types
+      programs: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          status: string | null;
+          category: string | null;
+          participants: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          status?: string | null;
+          category?: string | null;
+          participants?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          status?: string | null;
+          category?: string | null;
+          participants?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      projects: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          status: string | null;
+          funding_goal: number | null;
+          funding_current: number | null;
+          image_url: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          status?: string | null;
+          funding_goal?: number | null;
+          funding_current?: number | null;
+          image_url?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          status?: string | null;
+          funding_goal?: number | null;
+          funding_current?: number | null;
+          image_url?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      team_members: {
+        Row: {
+          id: string;
+          name: string;
+          position: string;
+          bio: string | null;
+          image_url: string | null;
+          email: string | null;
+          phone: string | null;
+          display_order: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          position: string;
+          bio?: string | null;
+          image_url?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          display_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          position?: string;
+          bio?: string | null;
+          image_url?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          display_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
       };
     };
     Views: {};

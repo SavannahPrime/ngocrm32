@@ -5,7 +5,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader, Plus, Search, Trash2, Edit } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
+// Mock data for team members
+const MOCK_TEAM_DATA = [
+  {
+    id: "1",
+    name: "Jane Smith",
+    position: "Executive Director",
+    image_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&auto=format&fit=crop",
+    display_order: 1
+  },
+  {
+    id: "2",
+    name: "Michael Johnson",
+    position: "Operations Manager",
+    image_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&auto=format&fit=crop",
+    display_order: 2
+  },
+  {
+    id: "3",
+    name: "Sarah Williams",
+    position: "Program Coordinator",
+    image_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&auto=format&fit=crop",
+    display_order: 3
+  },
+  {
+    id: "4",
+    name: "David Garcia",
+    position: "Volunteer Coordinator",
+    image_url: null,
+    display_order: 4
+  }
+];
 
 const AdminTeam = () => {
   const [team, setTeam] = useState([]);
@@ -20,14 +51,11 @@ const AdminTeam = () => {
   const fetchTeamMembers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('team_members')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      
-      setTeam(data || []);
+      // Using mock data instead of real database call
+      setTimeout(() => {
+        setTeam(MOCK_TEAM_DATA);
+        setLoading(false);
+      }, 800); // Simulate network delay
     } catch (error) {
       console.error('Error fetching team members:', error);
       toast({
@@ -35,7 +63,6 @@ const AdminTeam = () => {
         description: "Could not load team members. Please try again later.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

@@ -5,8 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader, Plus, Search, Trash2, Edit } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+
+// Mock data for projects
+const MOCK_PROJECTS_DATA = [
+  {
+    id: "1",
+    title: "Clean Water Initiative",
+    description: "Bringing clean water to rural communities",
+    status: "active",
+    created_at: "2025-03-15T10:00:00.000Z",
+    funding_goal: 50000
+  },
+  {
+    id: "2",
+    title: "Education for All",
+    description: "Building schools in underserved areas",
+    status: "completed",
+    created_at: "2025-02-10T09:30:00.000Z",
+    funding_goal: 75000
+  },
+  {
+    id: "3",
+    title: "Hunger Relief Program",
+    description: "Providing meals to homeless populations",
+    status: "pending",
+    created_at: "2025-03-28T14:15:00.000Z",
+    funding_goal: 25000
+  }
+];
 
 const AdminProjects = () => {
   const [projects, setProjects] = useState([]);
@@ -21,14 +48,11 @@ const AdminProjects = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      setProjects(data || []);
+      // Using mock data instead of real database call
+      setTimeout(() => {
+        setProjects(MOCK_PROJECTS_DATA);
+        setLoading(false);
+      }, 800); // Simulate network delay
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
@@ -36,7 +60,6 @@ const AdminProjects = () => {
         description: "Could not load projects. Please try again later.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
