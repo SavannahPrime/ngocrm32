@@ -58,7 +58,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching tribes:", tribesError);
         throw tribesError;
       }
-      setTribes(tribesData || []);
+      setTribes(tribesData as TribeType[] || []);
       console.log("Tribes fetched:", tribesData ? tribesData.length : 0);
       
       // Fetch members
@@ -71,7 +71,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching members:", membersError);
         throw membersError;
       }
-      setMembers(membersData || []);
+      setMembers(membersData as MemberType[] || []);
       console.log("Members fetched:", membersData ? membersData.length : 0);
       
       // Fetch leaders
@@ -84,7 +84,7 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching leaders:", leadersError);
         throw leadersError;
       }
-      setLeaders(leadersData || []);
+      setLeaders(leadersData as LeaderType[] || []);
       console.log("Leaders fetched:", leadersData ? leadersData.length : 0);
       
       // Try to fetch sermons, but don't fail if the table doesn't exist yet

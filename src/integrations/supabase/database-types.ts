@@ -1,4 +1,3 @@
-
 export type TablesNames = 'events' | 'sermons' | 'tribes' | 'members' | 'leaders' | 'programs' | 'projects' | 'team_members';
 
 export interface Database {
@@ -324,6 +323,96 @@ export interface Database {
           phone?: string | null;
           display_order?: number | null;
           created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      media_library: {
+        Row: {
+          created_at: string | null;
+          file_name: string;
+          id: string;
+          size: number;
+          type: string;
+          uploaded_by: string;
+          url: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          file_name: string;
+          id?: string;
+          size: number;
+          type: string;
+          uploaded_by: string;
+          url: string;
+        };
+        Update: {
+          created_at?: string | null;
+          file_name?: string;
+          id?: string;
+          size?: number;
+          type?: string;
+          uploaded_by?: string;
+          url?: string;
+        };
+        Relationships: [];
+      };
+      posts: {
+        Row: {
+          author_id: string;
+          content: string;
+          created_at: string | null;
+          featured_image_url: string | null;
+          id: string;
+          status: string;
+          tags: string[] | null;
+          title: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          author_id: string;
+          content: string;
+          created_at?: string | null;
+          featured_image_url?: string | null;
+          id?: string;
+          status?: string;
+          tags?: string[] | null;
+          title: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          author_id?: string;
+          content?: string;
+          created_at?: string | null;
+          featured_image_url?: string | null;
+          id?: string;
+          status?: string;
+          tags?: string[] | null;
+          title?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          created_at: string | null;
+          email: string;
+          id: string;
+          role: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          email: string;
+          id: string;
+          role?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          email?: string;
+          id?: string;
+          role?: string;
           updated_at?: string | null;
         };
         Relationships: [];
