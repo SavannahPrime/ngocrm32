@@ -9,216 +9,144 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      events: {
+      media_library: {
         Row: {
           created_at: string | null
-          date: string
-          description: string
-          featured: boolean | null
+          file_name: string
           id: string
-          image_url: string | null
-          location: string
-          time: string
-          title: string
-          updated_at: string | null
+          size: number
+          type: string
+          uploaded_by: string
+          url: string
         }
         Insert: {
           created_at?: string | null
-          date: string
-          description: string
-          featured?: boolean | null
+          file_name: string
           id?: string
-          image_url?: string | null
-          location: string
-          time: string
-          title: string
-          updated_at?: string | null
+          size: number
+          type: string
+          uploaded_by: string
+          url: string
         }
         Update: {
           created_at?: string | null
-          date?: string
-          description?: string
-          featured?: boolean | null
+          file_name?: string
           id?: string
-          image_url?: string | null
-          location?: string
-          time?: string
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      leaders: {
-        Row: {
-          bio: string | null
-          contact_email: string | null
-          contact_phone: string | null
-          created_at: string | null
-          featured: boolean | null
-          id: string
-          image_url: string | null
-          is_active: boolean | null
-          name: string
-          role: string
-          tribe_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          bio?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          created_at?: string | null
-          featured?: boolean | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          name: string
-          role: string
-          tribe_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          bio?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
-          created_at?: string | null
-          featured?: boolean | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          name?: string
-          role?: string
-          tribe_id?: string | null
-          updated_at?: string | null
+          size?: number
+          type?: string
+          uploaded_by?: string
+          url?: string
         }
         Relationships: [
           {
-            foreignKeyName: "leaders_tribe_id_fkey"
-            columns: ["tribe_id"]
+            foreignKeyName: "media_library_uploaded_by_fkey"
+            columns: ["uploaded_by"]
             isOneToOne: false
-            referencedRelation: "tribes"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      members: {
+      posts: {
         Row: {
-          address: string | null
-          birth_date: string | null
-          created_at: string | null
-          email: string | null
-          id: string
-          is_active: boolean | null
-          join_date: string | null
-          name: string
-          phone: string | null
-          tribe_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          address?: string | null
-          birth_date?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          is_active?: boolean | null
-          join_date?: string | null
-          name: string
-          phone?: string | null
-          tribe_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          address?: string | null
-          birth_date?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          is_active?: boolean | null
-          join_date?: string | null
-          name?: string
-          phone?: string | null
-          tribe_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "members_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sermons: {
-        Row: {
+          author_id: string
           content: string
           created_at: string | null
-          date: string
-          featured: boolean | null
+          featured_image_url: string | null
           id: string
-          image_url: string | null
-          preacher: string
-          scripture: string
+          status: string
           tags: string[] | null
           title: string
-          type: string | null
           updated_at: string | null
-          video_url: string | null
         }
         Insert: {
+          author_id: string
           content: string
           created_at?: string | null
-          date: string
-          featured?: boolean | null
+          featured_image_url?: string | null
           id?: string
-          image_url?: string | null
-          preacher: string
-          scripture: string
+          status?: string
           tags?: string[] | null
           title: string
-          type?: string | null
           updated_at?: string | null
-          video_url?: string | null
         }
         Update: {
+          author_id?: string
           content?: string
           created_at?: string | null
-          date?: string
-          featured?: boolean | null
+          featured_image_url?: string | null
           id?: string
-          image_url?: string | null
-          preacher?: string
-          scripture?: string
+          status?: string
           tags?: string[] | null
           title?: string
-          type?: string | null
           updated_at?: string | null
-          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          role?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          role?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
-      tribes: {
+      projects: {
         Row: {
+          budget: number
           created_at: string | null
-          description: string | null
+          description: string
+          gallery: string[] | null
           id: string
+          location: string
           name: string
+          progress: number
           updated_at: string | null
         }
         Insert: {
+          budget: number
           created_at?: string | null
-          description?: string | null
+          description: string
+          gallery?: string[] | null
           id?: string
+          location: string
           name: string
+          progress?: number
           updated_at?: string | null
         }
         Update: {
+          budget?: number
           created_at?: string | null
-          description?: string | null
+          description?: string
+          gallery?: string[] | null
           id?: string
+          location?: string
           name?: string
+          progress?: number
           updated_at?: string | null
         }
         Relationships: []
