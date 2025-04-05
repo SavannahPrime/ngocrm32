@@ -9,7 +9,7 @@ export interface MemberType {
   address: string | null;
   join_date: string | null;
   is_active: boolean;
-  notes?: string | null; // Made optional with ?
+  notes?: string | null;
   tribe_id: string | null;
   created_at: string;
   updated_at?: string;
@@ -18,16 +18,16 @@ export interface MemberType {
 export interface SermonType {
   id: string;
   title: string;
-  description?: string | null; // Made optional
+  description?: string | null;
   preacher: string | null;
-  scripture?: string | null; // Added this field which exists in the DB
-  scripture_reference?: string | null; // Made optional
-  audio_url?: string | null; // Made optional
+  scripture?: string | null;
+  scripture_reference?: string | null;
+  audio_url?: string | null;
   video_url: string | null;
-  notes_url?: string | null; // Made optional
+  notes_url?: string | null;
   date: string;
   type: string; // 'sermon' or 'blog' or other types
-  content: string | null; // Full content for blog posts
+  content: string | null;
   image_url: string | null;
   tags: string[] | null;
   featured: boolean;
@@ -41,12 +41,12 @@ export interface EventType {
   description: string | null;
   date: string;
   time: string | null;
-  end_time?: string | null; // Made optional
+  end_time?: string | null;
   location: string | null;
-  recurring?: boolean; // Made optional
-  recurring_pattern?: string | null; // Made optional
+  recurring?: boolean;
+  recurring_pattern?: string | null;
   image_url: string | null;
-  registration_url?: string | null; // Made optional
+  registration_url?: string | null;
   featured: boolean;
   created_at: string;
   updated_at?: string;
@@ -58,7 +58,7 @@ export interface LeaderType {
   role: string | null;
   bio: string | null;
   image_url: string | null;
-  email?: string | null; // Made optional
+  email?: string | null;
   contact_email: string | null;
   contact_phone: string | null;
   tribe_id: string | null;
@@ -71,10 +71,10 @@ export interface TribeType {
   id: string;
   name: string;
   description: string | null;
-  leader_id?: string | null; // Made optional
-  meeting_day?: string | null; // Made optional
-  meeting_time?: string | null; // Made optional
-  meeting_location?: string | null; // Made optional
+  leader_id?: string | null;
+  meeting_day?: string | null;
+  meeting_time?: string | null;
+  meeting_location?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -86,12 +86,23 @@ export interface ProjectType {
   status: string;
   funding_goal: number;
   funding_current: number;
-  image_url: string;
-  start_date: string;
-  end_date: string;
+  image_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
   featured: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+}
+
+export interface UserProfileType {
+  id: string;
+  email: string;
+  role: string;
+  name?: string;
+  avatar_url?: string;
+  bio?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 // Utility functions for embedding media

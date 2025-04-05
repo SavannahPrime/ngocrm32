@@ -20,6 +20,7 @@ import BlogPost from "./pages/BlogPost";
 import Events from "./pages/Events";
 import Contact from "./pages/Contact";
 import Volunteer from "./pages/Volunteer";
+import Register from "./pages/Register";
 import Donate from "./pages/Donate";
 import Admin from "./pages/Admin";
 import AdminMembers from "./pages/admin/Members";
@@ -29,6 +30,7 @@ import AdminEvents from "./pages/admin/Events";
 import AdminTeam from "./pages/admin/Team";
 import AdminPrograms from "./pages/admin/Programs";
 import AdminDashboard from "./pages/admin/Dashboard";
+import AdminProfile from "./pages/admin/Profile";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +58,7 @@ const App = () => (
                   <Route path="events" element={<Events />} />
                   <Route path="contact" element={<Contact />} />
                   <Route path="volunteer" element={<Volunteer />} />
+                  <Route path="register" element={<Register />} />
                   <Route path="donate" element={<Donate />} />
                 </Route>
                 <Route path="/admin/login" element={<AdminLogin />} />
@@ -67,6 +70,7 @@ const App = () => (
                   <Route path="events" element={<AdminEvents />} />
                   <Route path="team" element={<AdminTeam />} />
                   <Route path="programs" element={<AdminPrograms />} />
+                  <Route path="profile" element={<AdminProfile />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

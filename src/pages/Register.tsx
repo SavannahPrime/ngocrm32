@@ -19,7 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Form schema validation
 const formSchema = z.object({
@@ -37,7 +38,9 @@ type FormValues = z.infer<typeof formSchema>;
 const Register = () => {
   const { toast } = useToast();
   const { addMember, isLoading } = useNGO();
+  const navigate = useNavigate();
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -57,12 +60,15 @@ const Register = () => {
       phone: data.phone,
       address: data.location,
       birth_date: data.birthDate.toISOString().split('T')[0],
+      is_active: true,
+      join_date: new Date().toISOString().split('T')[0],
     };
     
     // Add member to the database
     const success = await addMember(memberData);
     
     if (success) {
+      setIsSubmitted(true);
       toast({
         title: "Registration Successful",
         description: `Thank you for registering as a volunteer! We will contact you soon.`,
@@ -71,6 +77,11 @@ const Register = () => {
       // Reset form
       form.reset();
       setSelectedRegion(null);
+      
+      // After 3 seconds, redirect to homepage
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
     }
   };
 
@@ -91,6 +102,22 @@ const Register = () => {
     
     form.setValue("location", value);
   };
+
+  if (isSubmitted) {
+    return (
+      <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
+        <div className="bg-green-50 rounded-lg p-8 shadow-sm">
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-ngo-primary mb-2">Registration Complete!</h1>
+          <p className="text-gray-600 mb-4">
+            Thank you for registering as a volunteer. Your information has been saved and 
+            our team will contact you soon about available opportunities.
+          </p>
+          <p className="text-sm text-gray-500">You will be redirected to the homepage in a few seconds...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
@@ -174,7 +201,7 @@ const Register = () => {
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date > new Date()}
+                          disabled={(date) => date > new Date() || date < new Date("1940-01-01")}
                           initialFocus
                         />
                       </PopoverContent>

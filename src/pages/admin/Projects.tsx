@@ -1,614 +1,842 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader, Plus, Search, Trash2, Edit } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MediaUpload } from "@/components/MediaUpload";
-import { toast as sonnerToast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, ImageIcon, Edit, Trash2, Loader2, Plus, CheckCircle2, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { ProjectType } from "@/types/supabase";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
-// Define the project type
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  status: string | null;
-  funding_goal: number | null;
-  funding_current: number | null;
-  image_url: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+// Form schema
+const projectSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  status: z.string(),
+  funding_goal: z.coerce.number().min(0, "Funding goal must be a positive number"),
+  funding_current: z.coerce.number().min(0, "Current funding must be a positive number"),
+  image_url: z.string().nullable(),
+  start_date: z.date().optional(),
+  end_date: z.date().optional(),
+  featured: z.boolean().default(false),
+});
+
+type ProjectFormValues = z.infer<typeof projectSchema>;
 
 const AdminProjects = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const { toast } = useToast();
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectType | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const [formData, setFormData] = useState<Partial<Project>>({
-    title: "",
-    description: "",
-    status: "active",
-    funding_goal: 0,
-    funding_current: 0,
-    image_url: "",
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: ""
+  // Form setup
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "active",
+      funding_goal: 0,
+      funding_current: 0,
+      image_url: null,
+      featured: false,
+    },
   });
 
-  const statuses = ["active", "pending", "completed", "cancelled"];
-
+  // Fetch projects
   useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        setProjects(data || []);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load projects. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
     fetchProjects();
-  }, []);
+  }, [toast]);
 
-  const fetchProjects = async () => {
+  // Filter projects
+  const filteredProjects = projects.filter(project => {
+    const matchesStatus = !filterStatus || project.status === filterStatus;
+    const matchesSearch = !searchQuery || 
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesSearch;
+  });
+
+  // Handle add/edit dialog
+  const handleAddProject = () => {
+    setEditingProject(null);
+    setImagePreview(null);
+    form.reset({
+      title: "",
+      description: "",
+      status: "active",
+      funding_goal: 0,
+      funding_current: 0,
+      image_url: null,
+      featured: false,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleEditProject = (project: ProjectType) => {
+    setEditingProject(project);
+    setImagePreview(project.image_url);
+    
+    form.reset({
+      title: project.title,
+      description: project.description,
+      status: project.status,
+      funding_goal: project.funding_goal,
+      funding_current: project.funding_current,
+      image_url: project.image_url,
+      featured: project.featured,
+      start_date: project.start_date ? new Date(project.start_date) : undefined,
+      end_date: project.end_date ? new Date(project.end_date) : undefined,
+    });
+    
+    setIsDialogOpen(true);
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `projects/${fileName}`;
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return 95;
+          }
+          return prev + 5;
+        });
+      }, 100);
+      
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('media')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+        
+      clearInterval(progressInterval);
+      
       if (error) throw error;
       
-      setProjects(data || []);
-    } catch (error: any) {
-      console.error('Error fetching projects:', error);
+      // Get public URL for the file
+      const { data: urlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+        
+      // Set the image URL in the form
+      form.setValue('image_url', urlData.publicUrl);
+      setUploadProgress(100);
+      
+      // Success message
       toast({
-        title: "Error",
-        description: "Could not load projects. Please try again later.",
+        title: "Image Uploaded",
+        description: "The image has been successfully uploaded.",
+      });
+      
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
         variant: "destructive",
+        title: "Upload Failed",
+        description: "Failed to upload image. Please try again.",
       });
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: parseFloat(value) || 0 });
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleImageChange = (url: string) => {
-    setFormData({ ...formData, image_url: url });
-  };
-
-  const handleAddProject = async () => {
+  // Handle form submission
+  const onSubmit = async (data: ProjectFormValues) => {
     try {
-      if (!formData.title || !formData.description) {
+      setIsSubmitting(true);
+      
+      const projectData = {
+        ...data,
+        start_date: data.start_date ? format(data.start_date, 'yyyy-MM-dd') : null,
+        end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
+        updated_at: new Date().toISOString(),
+      };
+      
+      if (editingProject) {
+        // Update existing project
+        const { error } = await supabase
+          .from('projects')
+          .update(projectData)
+          .eq('id', editingProject.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        setProjects(prev => 
+          prev.map(p => p.id === editingProject.id ? { ...p, ...projectData } as ProjectType : p)
+        );
+        
         toast({
-          title: "Error",
-          description: "Title and description are required fields.",
-          variant: "destructive",
+          title: "Project Updated",
+          description: "The project has been successfully updated.",
         });
-        return;
+      } else {
+        // Create new project
+        const { data: newProject, error } = await supabase
+          .from('projects')
+          .insert({
+            ...projectData,
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        // Update local state
+        setProjects(prev => [newProject as ProjectType, ...prev]);
+        
+        toast({
+          title: "Project Created",
+          description: "The new project has been successfully created.",
+        });
       }
-
-      const { data, error } = await supabase
-        .from("projects")
-        .insert({
-          title: formData.title,
-          description: formData.description,
-          status: formData.status || "active",
-          funding_goal: formData.funding_goal || 0,
-          funding_current: formData.funding_current || 0,
-          image_url: formData.image_url || null,
-          start_date: formData.start_date || null,
-          end_date: formData.end_date || null,
-        })
-        .select();
-
-      if (error) throw error;
-
-      sonnerToast.success("Project added successfully");
-      toast({
-        title: "Success",
-        description: "Project has been added successfully!",
-      });
       
-      setIsAddDialogOpen(false);
-      setFormData({
-        title: "",
-        description: "",
-        status: "active",
-        funding_goal: 0,
-        funding_current: 0,
-        image_url: "",
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: ""
-      });
+      // Close dialog and reset form
+      setIsDialogOpen(false);
+      form.reset();
       
-      fetchProjects();
-    } catch (error: any) {
-      console.error("Error adding project:", error);
+    } catch (error) {
+      console.error("Error saving project:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: `Failed to add project: ${error.message}`,
+        description: "Failed to save project. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleEditProject = async () => {
+  // Handle project deletion
+  const handleDeleteProject = async (id: string) => {
     try {
-      if (!selectedProject) return;
+      setConfirmDelete(id);
       
-      if (!formData.title || !formData.description) {
-        toast({
-          title: "Error",
-          description: "Title and description are required fields.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
-        .from("projects")
-        .update({
-          title: formData.title,
-          description: formData.description,
-          status: formData.status,
-          funding_goal: formData.funding_goal,
-          funding_current: formData.funding_current,
-          image_url: formData.image_url,
-          start_date: formData.start_date,
-          end_date: formData.end_date,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedProject.id);
-
-      if (error) throw error;
-
-      sonnerToast.success("Project updated successfully");
-      toast({
-        title: "Success",
-        description: "Project has been updated successfully!",
-      });
-      
-      setIsEditDialogOpen(false);
-      setSelectedProject(null);
-      fetchProjects();
-    } catch (error: any) {
-      console.error("Error updating project:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to update project: ${error.message}`,
-      });
-    }
-  };
-
-  const handleDeleteProject = async () => {
-    try {
-      if (!selectedProject) return;
-
-      const { error } = await supabase
-        .from("projects")
+        .from('projects')
         .delete()
-        .eq("id", selectedProject.id);
-
+        .eq('id', id);
+        
       if (error) throw error;
-
-      sonnerToast.success("Project deleted successfully");
+      
+      // Update local state
+      setProjects(prev => prev.filter(p => p.id !== id));
+      
       toast({
-        title: "Success",
-        description: "Project has been deleted successfully!",
+        title: "Project Deleted",
+        description: "The project has been successfully deleted.",
       });
       
-      setIsDeleteDialogOpen(false);
-      setSelectedProject(null);
-      fetchProjects();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting project:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: `Failed to delete project: ${error.message}`,
+        description: "Failed to delete project. Please try again.",
       });
+    } finally {
+      setConfirmDelete(null);
     }
-  };
-
-  const handleOpenEditDialog = (project: Project) => {
-    setSelectedProject(project);
-    setFormData({
-      title: project.title,
-      description: project.description,
-      status: project.status || "active",
-      funding_goal: project.funding_goal || 0,
-      funding_current: project.funding_current || 0,
-      image_url: project.image_url || "",
-      start_date: project.start_date || "",
-      end_date: project.end_date || ""
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleOpenDeleteDialog = (project: Project) => {
-    setSelectedProject(project);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const filteredProjects = projects.filter(project =>
-    project.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "completed":
-        return "bg-blue-100 text-blue-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const formatCurrency = (amount: number | null) => {
-    if (amount === null) return "$0";
-    return "$" + amount.toLocaleString();
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Project Management</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Project
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Projects</h1>
+          <p className="text-gray-500">Manage your organization's projects</p>
+        </div>
+        
+        <Button 
+          onClick={handleAddProject}
+          className="bg-ngo-primary hover:bg-ngo-primary/90"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Project
+        </Button>
+      </div>
+      
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="w-full md:w-1/3">
+          <Input
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <Select
+          value={filterStatus || ""}
+          onValueChange={(value) => setFilterStatus(value || null)}
+        >
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setFilterStatus(null);
+            setSearchQuery("");
+          }}
+          className="md:ml-auto"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Reset Filters
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <CardTitle>All Projects</CardTitle>
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search projects..."
-                className="pl-8 w-full md:w-[300px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+      {/* Projects Table */}
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-8 w-8 animate-spin text-ngo-primary" />
+            <span>Loading projects...</span>
           </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredProjects.length > 0 ? (
-            <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead className="border-b">
-                  <tr>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Title</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Start Date</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Funding Goal</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Current Funding</th>
-                    <th className="h-12 px-4 text-right align-middle font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProjects.map((project) => (
-                    <tr key={project.id} className="border-b transition-colors hover:bg-muted/50">
-                      <td className="p-4 align-middle font-medium">{project.title}</td>
-                      <td className="p-4 align-middle">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(project.status)}`}>
-                          {project.status || "Unknown"}
-                        </span>
-                      </td>
-                      <td className="p-4 align-middle">
-                        {project.start_date ? format(new Date(project.start_date), 'MMM d, yyyy') : 'N/A'}
-                      </td>
-                      <td className="p-4 align-middle">
-                        {formatCurrency(project.funding_goal)}
-                      </td>
-                      <td className="p-4 align-middle">
-                        {formatCurrency(project.funding_current)}
-                      </td>
-                      <td className="p-4 align-middle text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(project)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(project)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+        </div>
+      ) : filteredProjects.length > 0 ? (
+        <div className="border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Project</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Funding</TableHead>
+                <TableHead>Featured</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProjects.map((project) => (
+                <TableRow key={project.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+                        {project.image_url ? (
+                          <img 
+                            src={project.image_url} 
+                            alt={project.title} 
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium">{project.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Created: {format(new Date(project.created_at), 'MMM d, yyyy')}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={project.status} />
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="text-sm">
+                        ${project.funding_current.toLocaleString()} / ${project.funding_goal.toLocaleString()}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-ngo-primary h-2 rounded-full" 
+                          style={{ 
+                            width: `${Math.min(100, (project.funding_current / project.funding_goal) * 100)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {project.featured ? (
+                      <Badge className="bg-green-500">Featured</Badge>
+                    ) : (
+                      <span className="text-gray-500 text-sm">No</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditProject(project)}
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteProject(project.id)}
+                        disabled={confirmDelete === project.id}
+                      >
+                        {confirmDelete === project.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="bg-gray-50 rounded-md p-8 text-center">
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="rounded-full bg-gray-100 p-3">
+              <ImageIcon className="h-6 w-6 text-gray-400" />
             </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              {searchQuery ? "No projects match your search criteria." : "No projects found. Add your first project."}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Add Project Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Add New Project</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                name="title"
-                placeholder="Enter project title"
-                value={formData.title}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Enter project description"
-                rows={4}
-                value={formData.description}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status || "active"}
-                  onValueChange={(value) => handleSelectChange("status", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="image">Project Image</Label>
-                <MediaUpload
-                  type="image"
-                  value={formData.image_url as string}
-                  onChange={handleImageChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date</Label>
-                <Input
-                  id="start_date"
-                  name="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_date">End Date</Label>
-                <Input
-                  id="end_date"
-                  name="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="funding_goal">Funding Goal ($)</Label>
-                <Input
-                  id="funding_goal"
-                  name="funding_goal"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Enter funding goal"
-                  value={formData.funding_goal?.toString() || "0"}
-                  onChange={handleNumberChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="funding_current">Current Funding ($)</Label>
-                <Input
-                  id="funding_current"
-                  name="funding_current"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Enter current funding"
-                  value={formData.funding_current?.toString() || "0"}
-                  onChange={handleNumberChange}
-                />
-              </div>
-            </div>
+            <h3 className="font-medium">No projects found</h3>
+            <p className="text-sm text-gray-500">
+              {searchQuery || filterStatus
+                ? "Try adjusting your search filters"
+                : "Get started by creating a new project"}
+            </p>
+            <Button 
+              className="mt-2"
+              onClick={handleAddProject}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Project
+            </Button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddProject}>Add Project</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
-      {/* Edit Project Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+      {/* Add/Edit Project Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
+            <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
+            <DialogDescription>
+              {editingProject
+                ? "Update the details of this project"
+                : "Enter the details for the new project"}
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Title *</Label>
-              <Input
-                id="edit-title"
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
                 name="title"
-                placeholder="Enter project title"
-                value={formData.title}
-                onChange={handleInputChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Clean Water Initiative" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description *</Label>
-              <Textarea
-                id="edit-description"
+              
+              <FormField
+                control={form.control}
                 name="description"
-                placeholder="Enter project description"
-                rows={4}
-                value={formData.description}
-                onChange={handleInputChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe the project and its goals..."
+                        className="min-h-[120px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
-                <Select
-                  value={formData.status || "active"}
-                  onValueChange={(value) => handleSelectChange("status", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-image">Project Image</Label>
-                <MediaUpload
-                  type="image"
-                  value={formData.image_url as string}
-                  onChange={handleImageChange}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="featured"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Featured Project</FormLabel>
+                        <FormDescription>
+                          Display this project on the homepage
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-start_date">Start Date</Label>
-                <Input
-                  id="edit-start_date"
-                  name="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-end_date">End Date</Label>
-                <Input
-                  id="edit-end_date"
-                  name="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-funding_goal">Funding Goal ($)</Label>
-                <Input
-                  id="edit-funding_goal"
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
                   name="funding_goal"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Enter funding goal"
-                  value={formData.funding_goal?.toString() || "0"}
-                  onChange={handleNumberChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Funding Goal</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="10000" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Target amount needed for the project
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-funding_current">Current Funding ($)</Label>
-                <Input
-                  id="edit-funding_current"
+                
+                <FormField
+                  control={form.control}
                   name="funding_current"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Enter current funding"
-                  value={formData.funding_current?.toString() || "0"}
-                  onChange={handleNumberChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Funding</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="0" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Amount already raised for this project
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditProject}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-          </DialogHeader>
-          <p>Are you sure you want to delete "{selectedProject?.title}"? This action cannot be undone.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteProject}>Delete</Button>
-          </DialogFooter>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="start_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Start Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="end_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>End Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="image_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Image</FormLabel>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="col-span-1 md:col-span-2">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              setImagePreview(e.target.value);
+                            }}
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enter a URL or upload an image
+                        </FormDescription>
+                        <FormMessage />
+                      </div>
+                      
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="image-upload"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                          disabled={isUploading}
+                        />
+                        <label 
+                          htmlFor="image-upload"
+                          className="w-full cursor-pointer bg-muted hover:bg-muted/80 flex items-center justify-center rounded-md border border-dashed p-3 text-sm"
+                        >
+                          {isUploading ? (
+                            <div className="flex flex-col items-center">
+                              <Loader2 className="h-6 w-6 animate-spin text-ngo-primary mb-1" />
+                              <span className="text-xs">{uploadProgress}%</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <ImageIcon className="h-6 w-6 mb-1 text-gray-500" />
+                              <span className="text-xs">Upload</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Image Preview */}
+                    {imagePreview && (
+                      <div className="mt-4">
+                        <div className="border rounded-md overflow-hidden h-48">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                            onError={() => setImagePreview(null)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  className="bg-ngo-primary hover:bg-ngo-primary/90"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingProject ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      {editingProject ? "Update Project" : "Create Project"}
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
   );
+};
+
+// Helper component for status badges
+const StatusBadge = ({ status }: { status: string }) => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return <Badge className="bg-green-500">Active</Badge>;
+    case 'completed':
+      return <Badge className="bg-blue-500">Completed</Badge>;
+    case 'pending':
+      return <Badge className="bg-yellow-500">Pending</Badge>;
+    case 'cancelled':
+      return <Badge className="bg-gray-500">Cancelled</Badge>;
+    default:
+      return <Badge className="bg-gray-500">{status}</Badge>;
+  }
 };
 
 export default AdminProjects;

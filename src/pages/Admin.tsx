@@ -4,7 +4,7 @@ import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Users,
-  BookOpen,
+  FileText,
   LayoutDashboard,
   UserRound,
   LogOut,
@@ -13,6 +13,7 @@ import {
   Calendar,
   Award,
   Landmark,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -170,12 +171,12 @@ const AdminNavLinks = ({ closeSidebar, currentPath }: AdminNavLinksProps) => {
     {
       name: "Blog",
       path: "/admin/blog",
-      icon: <svg xmlns="http://www.w3.org/2000/svg" className="mr-3 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+      icon: <FileText className="mr-3 h-5 w-5" />
     },
     {
       name: "Projects",
       path: "/admin/projects",
-      icon: <BookOpen className="mr-3 h-5 w-5" />
+      icon: <Landmark className="mr-3 h-5 w-5" />
     },
     {
       name: "Events",
@@ -191,6 +192,11 @@ const AdminNavLinks = ({ closeSidebar, currentPath }: AdminNavLinksProps) => {
       name: "Programs",
       path: "/admin/programs",
       icon: <Landmark className="mr-3 h-5 w-5" />
+    },
+    {
+      name: "Profile",
+      path: "/admin/profile",
+      icon: <Settings className="mr-3 h-5 w-5" />
     }
   ];
 
