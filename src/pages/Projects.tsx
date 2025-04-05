@@ -1,211 +1,199 @@
-
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Droplet, Building, BookOpen as Education, Users as Community, Heart as Health } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon } from "@radix-ui/react-icons";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { ProjectType } from "@/types/supabase";
 
-// Helper function to get the right icon for a category
-const getCategoryIcon = (category: string) => {
-  const categoryLower = category.toLowerCase();
-  if (categoryLower.includes('water') || categoryLower.includes('clean')) return <Droplet className="h-4 w-4" />;
-  if (categoryLower.includes('infrastructure') || categoryLower.includes('building')) return <Building className="h-4 w-4" />;
-  if (categoryLower.includes('education') || categoryLower.includes('school')) return <Education className="h-4 w-4" />;
-  if (categoryLower.includes('community')) return <Community className="h-4 w-4" />;
-  if (categoryLower.includes('health') || categoryLower.includes('medical')) return <Health className="h-4 w-4" />;
-  return null;
-};
-
 const Projects = () => {
-  const navigate = useNavigate();
-  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [allProjects, setAllProjects] = useState<ProjectType[]>([]);
   const [featuredProjects, setFeaturedProjects] = useState<ProjectType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredProjects, setFilteredProjects] = useState<ProjectType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
         const { data, error } = await supabase
-          .from("projects")
-          .select("*")
-          .order("created_at", { ascending: false });
-
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
         if (error) throw error;
-
-        if (data) {
-          // Check if featured property exists, if not, use a fallback approach
-          // For example, we can consider the first few projects as "featured"
-          // or use a different criterion like funding_goal being high
-          
-          // Option 1: Check if property exists
-          const hasFeaturedProperty = data.some(project => 'featured' in project);
-          
-          if (hasFeaturedProperty) {
-            // If the featured property exists, use it
-            const featured = data.filter(project => project.featured === true);
-            const regular = data.filter(project => !project.featured);
-            setFeaturedProjects(featured);
-            setProjects(regular);
-          } else {
-            // Option 2: Use an alternative approach - show projects with highest funding_goal as featured
-            // Sort by funding_goal (descending) and take the top 3 as featured
-            const sortedByFunding = [...data].sort((a, b) => 
-              (b.funding_goal || 0) - (a.funding_goal || 0)
-            );
-            
-            setFeaturedProjects(sortedByFunding.slice(0, 3));
-            setProjects(sortedByFunding.slice(3));
-          }
-        }
+        
+        // Type the data properly including the featured property
+        const projectsData = data as ProjectType[];
+        
+        // If there's no featured property, we'll handle it
+        setFeaturedProjects(projectsData.filter(p => p.featured === true));
+        setAllProjects(projectsData);
+        
+        console.log("Projects fetched:", projectsData.length);
       } catch (error) {
         console.error("Error fetching projects:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load projects. Please try again.",
+        });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
+    
     fetchProjects();
-  }, []);
+  }, [toast]);
+
+  useEffect(() => {
+    // Filter projects based on search query
+    if (searchQuery) {
+      const filtered = allProjects.filter(project =>
+        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredProjects(filtered);
+    } else {
+      setFilteredProjects([]);
+    }
+  }, [searchQuery, allProjects]);
+
+  const projectsToDisplay = searchQuery ? filteredProjects : allProjects;
+
+  if (isLoading) {
+    return (
+      <div className="py-12 px-4 flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ngo-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold text-ngo-primary">Our Projects</h1>
-        <p className="mt-2 text-gray-600">Making a difference in communities around the world</p>
+        <h1 className="text-4xl font-bold font-heading text-ngo-primary">Our Projects</h1>
+        <p className="mt-2 text-gray-600">Explore the initiatives driving change in communities worldwide</p>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ngo-primary"></div>
+      {/* Search and Filter Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div className="flex-1">
+          <Input
+            type="search"
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
         </div>
-      ) : (
-        <div className="space-y-12">
-          {featuredProjects.length > 0 && (
-            <div>
-              <h2 className="text-2xl font-bold text-ngo-primary mb-6">Featured Projects</h2>
-              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {featuredProjects.map((project) => (
-                  <div 
-                    key={project.id}
-                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                    onClick={() => navigate(`/projects/${project.id}`)}
-                  >
-                    <div className="h-48 bg-gray-200">
-                      {project.image_url ? (
-                        <img 
-                          src={project.image_url} 
-                          alt={project.title} 
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full bg-ngo-light">
-                          <span className="text-ngo-primary">HopeHarbor</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <h2 className="text-2xl font-bold mb-2">{project.title}</h2>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                        <span>East Africa Team</span>
-                        <span>•</span>
-                        <span>{project.start_date ? format(new Date(project.start_date), "MMMM yyyy") : "Ongoing"}</span>
-                      </div>
-                      <p className="text-gray-600 mb-6 line-clamp-3">
-                        {project.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {project.status && (
-                          <Badge variant="outline" className="flex items-center gap-1 py-1">
-                            <Droplet className="h-4 w-4" />
-                            Water
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="flex items-center gap-1 py-1">
-                          <Building className="h-4 w-4" />
-                          Infrastructure
-                        </Badge>
-                        <Badge variant="outline" className="flex items-center gap-1 py-1">
-                          <Health className="h-4 w-4" />
-                          Health
-                        </Badge>
-                      </div>
-                      <Button 
-                        variant="default"
-                        className="w-full bg-ngo-primary hover:bg-ngo-primary/90"
-                      >
-                        View Project
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "justify-start text-left font-normal",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              disabled={(date) =>
+                date > new Date() || date < new Date("1900-01-01")
+              }
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Featured Projects */}
+      {featuredProjects.length > 0 && (
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-ngo-dark mb-6 text-center">Featured Projects</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* All Projects */}
+      <section>
+        <h2 className="text-2xl font-bold text-ngo-dark mb-6 text-center">All Projects</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {projectsToDisplay.length > 0 ? (
+            projectsToDisplay.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))
+          ) : (
+            <div className="text-center py-12 col-span-full">
+              <p className="text-gray-500">No projects found.</p>
             </div>
           )}
-
-          <div>
-            <h2 className="text-2xl font-bold text-ngo-primary mb-6">{featuredProjects.length > 0 ? "All Projects" : "Our Projects"}</h2>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
-                <div 
-                  key={project.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                >
-                  <div className="h-48 bg-gray-200">
-                    {project.image_url ? (
-                      <img 
-                        src={project.image_url} 
-                        alt={project.title} 
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full bg-ngo-light">
-                        <span className="text-ngo-primary">HopeHarbor</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <h2 className="text-2xl font-bold mb-2">{project.title}</h2>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                      <span>East Africa Team</span>
-                      <span>•</span>
-                      <span>{project.start_date ? format(new Date(project.start_date), "MMMM yyyy") : "Ongoing"}</span>
-                    </div>
-                    <p className="text-gray-600 mb-6 line-clamp-3">
-                      {project.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Badge variant="outline" className="flex items-center gap-1 py-1">
-                        <Education className="h-4 w-4" />
-                        Education
-                      </Badge>
-                      <Badge variant="outline" className="flex items-center gap-1 py-1">
-                        <Building className="h-4 w-4" />
-                        Infrastructure
-                      </Badge>
-                      <Badge variant="outline" className="flex items-center gap-1 py-1">
-                        <Community className="h-4 w-4" />
-                        Community
-                      </Badge>
-                    </div>
-                    <Button 
-                      variant="default"
-                      className="w-full bg-ngo-primary hover:bg-ngo-primary/90"
-                    >
-                      View Project
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-      )}
+      </section>
     </div>
+  );
+};
+
+interface ProjectCardProps {
+  project: ProjectType;
+}
+
+const ProjectCard = ({ project }: ProjectCardProps) => {
+  const progress = Math.min((project.funding_current / project.funding_goal) * 100, 100);
+
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="aspect-w-4 aspect-h-3 bg-gray-200">
+        <img
+          src={project.image_url}
+          alt={project.title}
+          className="object-cover w-full h-full"
+        />
+      </div>
+      <CardHeader>
+        <CardTitle>{project.title}</CardTitle>
+        <CardDescription className="line-clamp-2 text-gray-600">{project.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">
+            {project.funding_current} / {project.funding_goal}
+          </span>
+          <span className="text-sm text-gray-500">{progress}%</span>
+        </div>
+        <progress className="w-full h-2 bg-gray-200 rounded-full" value={progress} max="100"></progress>
+        <Badge>{project.status}</Badge>
+      </CardContent>
+      <CardContent>
+        <div className="flex items-center text-ngo-primary">
+          <Link to={`/projects/${project.id}`} className="text-sm hover:underline">
+            Learn More
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

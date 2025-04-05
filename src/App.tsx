@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NGOProvider } from "./contexts/NGOContext";
+import { ChurchProvider } from "./contexts/ChurchContext";
 
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
@@ -37,39 +38,41 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <NGOProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Home />} />
-                <Route path="about" element={<About />} />
-                <Route path="mission" element={<OurMission />} />
-                <Route path="team" element={<OurTeam />} />
-                <Route path="projects" element={<Projects />} />
-                <Route path="projects/:id" element={<ProjectDetail />} />
-                <Route path="blog" element={<Blog />} />
-                <Route path="blog/:id" element={<BlogPost />} />
-                <Route path="events" element={<Events />} />
-                <Route path="contact" element={<Contact />} />
-                <Route path="volunteer" element={<Volunteer />} />
-                <Route path="donate" element={<Donate />} />
-              </Route>
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<Admin />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="members" element={<AdminMembers />} />
-                <Route path="blog" element={<AdminBlog />} />
-                <Route path="projects" element={<AdminProjects />} />
-                <Route path="events" element={<AdminEvents />} />
-                <Route path="team" element={<AdminTeam />} />
-                <Route path="programs" element={<AdminPrograms />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </NGOProvider>
+        <ChurchProvider>
+          <NGOProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Home />} />
+                  <Route path="about" element={<About />} />
+                  <Route path="mission" element={<OurMission />} />
+                  <Route path="team" element={<OurTeam />} />
+                  <Route path="projects" element={<Projects />} />
+                  <Route path="projects/:id" element={<ProjectDetail />} />
+                  <Route path="blog" element={<Blog />} />
+                  <Route path="blog/:id" element={<BlogPost />} />
+                  <Route path="events" element={<Events />} />
+                  <Route path="contact" element={<Contact />} />
+                  <Route path="volunteer" element={<Volunteer />} />
+                  <Route path="donate" element={<Donate />} />
+                </Route>
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<Admin />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="members" element={<AdminMembers />} />
+                  <Route path="blog" element={<AdminBlog />} />
+                  <Route path="projects" element={<AdminProjects />} />
+                  <Route path="events" element={<AdminEvents />} />
+                  <Route path="team" element={<AdminTeam />} />
+                  <Route path="programs" element={<AdminPrograms />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </NGOProvider>
+        </ChurchProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

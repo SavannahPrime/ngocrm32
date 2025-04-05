@@ -1,25 +1,41 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LeaderType, TribeType } from "@/types/supabase";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useChurch } from "@/contexts/ChurchContext";
+import { useNGO } from "@/contexts/NGOContext";
 
 const Leadership = () => {
-  const { leaders, tribes, isLoading } = useChurch();
+  const { leaders, isLoading } = useNGO();
   const [featuredLeaders, setFeaturedLeaders] = useState<LeaderType[]>([]);
   const [tribeLeaders, setTribeLeaders] = useState<LeaderType[]>([]);
+  const [tribes, setTribes] = useState<TribeType[]>([]);
   
   useEffect(() => {
-    // Filter leaders into featured and tribe categories
+    const fetchTribes = async () => {
+      const { data, error } = await supabase
+        .from('tribes')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching tribes:", error);
+        return;
+      }
+      
+      setTribes(data as TribeType[]);
+    };
+    
+    fetchTribes();
+  }, []);
+  
+  useEffect(() => {
     if (leaders.length > 0) {
       setFeaturedLeaders(leaders.filter(leader => leader.featured));
       setTribeLeaders(leaders.filter(leader => !leader.featured && leader.tribe_id));
     }
   }, [leaders]);
   
-  // Helper function to get tribe name
   const getTribeName = (tribeId: string | null): string => {
     if (!tribeId) return "General";
     const tribe = tribes.find(t => t.id === tribeId);

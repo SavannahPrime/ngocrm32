@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Card,
@@ -7,10 +6,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Mail, Globe, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useChurch } from "@/contexts/ChurchContext";
+import { useNGO } from "@/contexts/NGOContext";
 
 const OurTeam = () => {
-  const { leaders, isLoading } = useChurch();
+  const { leaders, isLoading } = useNGO();
   
   // Sort leaders by featured status
   const sortedLeaders = [...leaders].sort((a, b) => {

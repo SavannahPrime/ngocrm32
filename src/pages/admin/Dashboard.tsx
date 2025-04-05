@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from "react";
-import { useChurch } from "@/contexts/ChurchContext";
+import { useNGO } from "@/contexts/NGOContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, BookOpen, Calendar, DollarSign, TrendingUp, UserPlus, UserCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const AdminDashboard = () => {
-  const { members, sermons, events, tribes } = useChurch();
+  const { members, leaders, events, projects } = useNGO();
   const [activeTab, setActiveTab] = useState("overview");
+  const [tribes, setTribes] = useState([]);
   const [stats, setStats] = useState({
     totalMembers: 0,
     activeMembers: 0,
@@ -22,6 +22,24 @@ const AdminDashboard = () => {
       data: [] as number[]
     }
   });
+
+  // Fetch tribes data
+  useEffect(() => {
+    const fetchTribes = async () => {
+      const { data, error } = await supabase
+        .from('tribes')
+        .select('*');
+      
+      if (error) {
+        console.error("Error fetching tribes:", error);
+        return;
+      }
+      
+      setTribes(data || []);
+    };
+    
+    fetchTribes();
+  }, []);
 
   // Calculate dashboard stats
   useEffect(() => {
@@ -42,23 +60,20 @@ const AdminDashboard = () => {
       members.length * 0.85
     ].map(Math.round);
     
-    // Count blog posts
-    const blogPosts = sermons.filter(sermon => sermon.type === 'blog');
-    
     setStats({
       totalMembers: members.length,
       activeMembers,
       inactiveMembers: members.length - activeMembers,
-      totalSermons: sermons.filter(sermon => sermon.type === 'sermon').length,
+      totalSermons: 0,
       totalEvents: events.length,
-      totalBlogPosts: blogPosts.length,
+      totalBlogPosts: 0,
       membersByTribe,
       attendance: {
         labels: attendanceLabels,
         data: attendanceData
       }
     });
-  }, [members, sermons, events, tribes]);
+  }, [members, events, tribes]);
 
   const recentMembers = [...members]
     .sort((a, b) => new Date(b.join_date || '').getTime() - new Date(a.join_date || '').getTime())
