@@ -29,11 +29,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Form schema
+// Form schema - updated to include required fields
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
+  name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
+  location: z.string().min(2, "Location must be at least 2 characters"),
   status: z.string(),
+  budget: z.coerce.number().min(0, "Budget cannot be negative"),
+  progress: z.coerce.number().min(0).max(100, "Progress must be between 0 and 100").default(0),
   funding_goal: z.coerce.number().min(0, "Funding goal cannot be negative"),
   funding_current: z.coerce.number().min(0, "Current funding cannot be negative"),
   start_date: z.date().optional(),
@@ -59,8 +63,12 @@ const AdminProjects = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      name: "",
       description: "",
+      location: "",
       status: "active",
+      budget: 0,
+      progress: 0,
       funding_goal: 0,
       funding_current: 0,
       image_url: "",
@@ -141,10 +149,14 @@ const AdminProjects = () => {
   const openEditForm = (project: ProjectType) => {
     setEditingProject(project);
     
-    // Set form values
-    form.setValue("title", project.title);
+    // Set form values - updated to include all fields
+    form.setValue("title", project.title || "");
+    form.setValue("name", project.name);
     form.setValue("description", project.description);
+    form.setValue("location", project.location);
     form.setValue("status", project.status);
+    form.setValue("budget", project.budget);
+    form.setValue("progress", project.progress);
     form.setValue("funding_goal", project.funding_goal);
     form.setValue("funding_current", project.funding_current);
     form.setValue("image_url", project.image_url || "");
@@ -165,8 +177,12 @@ const AdminProjects = () => {
     setEditingProject(null);
     form.reset({
       title: "",
+      name: "",
       description: "",
+      location: "",
       status: "active",
+      budget: 0,
+      progress: 0,
       funding_goal: 0,
       funding_current: 0,
       image_url: "",
@@ -184,11 +200,15 @@ const AdminProjects = () => {
     try {
       setLoading(true);
       
-      // Prepare project data
+      // Prepare project data - updated to include all required fields
       const projectData = {
         title: data.title,
+        name: data.name,
         description: data.description,
+        location: data.location,
         status: data.status,
+        budget: data.budget,
+        progress: data.progress,
         funding_goal: data.funding_goal,
         funding_current: data.funding_current,
         image_url: data.image_url || null,
@@ -223,7 +243,7 @@ const AdminProjects = () => {
           description: "The project has been updated successfully.",
         });
       } else {
-        // Create new project
+        // Create new project - fixed to include all required fields
         const { data: newProject, error } = await supabase
           .from('projects')
           .insert({
@@ -460,6 +480,20 @@ const AdminProjects = () => {
 
                 <FormField
                   control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
@@ -470,6 +504,20 @@ const AdminProjects = () => {
                           rows={4}
                           placeholder="Describe the project, its goals, and its impact..."
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -522,6 +570,36 @@ const AdminProjects = () => {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="budget"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Budget ($)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={100} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="progress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Progress (%)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} max={100} step={1} {...field} />
+                        </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
