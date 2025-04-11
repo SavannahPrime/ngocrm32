@@ -1,11 +1,15 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { UserProfileType } from "@/types/supabase";
 
 interface AdminUser {
   id: string;
-  name: string;
+  name: string | null;
   email: string;
   role: string;
+  avatar_url?: string | null;
+  bio?: string | null;
 }
 
 interface AuthContextType {
@@ -43,7 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (email === "pastor@globalcathedral.org" && password === "admin123") {
         const adminUser: AdminUser = {
           id: "1",
-          name: "Pastor Admin",
+          name: "Admin User",
           email: "pastor@globalcathedral.org",
           role: "admin"
         };
@@ -52,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem("churchAdmin", JSON.stringify(adminUser));
         toast({
           title: "Login Successful",
-          description: "Welcome back, Pastor!",
+          description: "Welcome back, Admin!",
         });
         return true;
       } else {

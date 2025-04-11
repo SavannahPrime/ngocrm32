@@ -77,7 +77,18 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (projectsError) {
           console.error("Error fetching projects:", projectsError);
         } else {
-          setProjects(projectsData as ProjectType[] || []);
+          // Ensure projects have all required fields with defaults
+          const processedProjects = (projectsData || []).map(project => ({
+            ...project,
+            featured: project.featured ?? false,
+            title: project.title || project.name || "",
+            description: project.description || "",
+            status: project.status || "active",
+            funding_goal: project.funding_goal || project.budget || 0,
+            funding_current: project.funding_current || 0,
+          })) as ProjectType[];
+          
+          setProjects(processedProjects);
           console.log("Projects fetched:", projectsData ? projectsData.length : 0);
         }
       } catch (error) {

@@ -103,8 +103,14 @@ const AdminProjects = () => {
           const projectsWithDefaults = data.map(project => ({
             ...project,
             featured: project.featured ?? false,
+            title: project.title || project.name || "",
+            description: project.description || "",
+            status: project.status || "active",
+            funding_goal: project.funding_goal || project.budget || 0,
+            funding_current: project.funding_current || 0,
           })) as ProjectType[];
           
+          console.log("Fetched projects:", projectsWithDefaults);
           setProjects(projectsWithDefaults);
         }
       } catch (error) {
@@ -252,21 +258,27 @@ const AdminProjects = () => {
         featured: data.featured,
         start_date: data.start_date ? format(data.start_date, 'yyyy-MM-dd') : null,
         end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
-        updated_at: new Date().toISOString(),
       };
       
       if (editingProject) {
         // Update existing project
         const { error } = await supabase
           .from('projects')
-          .update(projectData)
+          .update({
+            ...projectData,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', editingProject.id);
           
         if (error) throw error;
         
         // Update local state
         setProjects(prev => 
-          prev.map(p => p.id === editingProject.id ? { ...p, ...projectData } as ProjectType : p)
+          prev.map(p => p.id === editingProject.id ? { 
+            ...p, 
+            ...projectData,
+            updated_at: new Date().toISOString()
+          } as ProjectType : p)
         );
         
         toast({
@@ -280,6 +292,7 @@ const AdminProjects = () => {
           .insert({
             ...projectData,
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .select()
           .single();

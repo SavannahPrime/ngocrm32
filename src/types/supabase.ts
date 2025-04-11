@@ -1,3 +1,4 @@
+
 // Define types based on your Supabase tables structure
 export interface MemberType {
   id: string;
@@ -102,9 +103,9 @@ export interface UserProfileType {
   id: string;
   email: string;
   role: string;
-  name?: string;
-  avatar_url?: string;
-  bio?: string;
+  name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
   created_at: string;
   updated_at?: string;
 }
