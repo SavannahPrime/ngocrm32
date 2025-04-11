@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Upload, Link, Image as ImageIcon, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isYouTubeUrl, isGoogleDriveUrl, getYouTubeEmbedUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface MediaUploadProps {
   type: "image" | "video";
@@ -22,6 +23,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Update URL input when value prop changes
   useEffect(() => {
@@ -88,17 +90,29 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${type === "image" ? "images" : "videos"}/${fileName}`;
       
+      console.log("Uploading file to path:", filePath);
+      
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
         .from("blog-assets")
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false
+        });
         
-      if (error) throw error;
+      if (error) {
+        console.error("Storage upload error:", error);
+        throw error;
+      }
+      
+      console.log("Upload successful, getting public URL");
       
       // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from("blog-assets")
         .getPublicUrl(filePath);
+      
+      console.log("Public URL obtained:", publicUrl);
       
       onChange(publicUrl);
       setUrlInput(publicUrl);

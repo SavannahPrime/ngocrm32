@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectType } from "@/types/supabase";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
 } from "@/components/ui/card";
@@ -218,6 +218,8 @@ const AdminProjects = () => {
         end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
       };
       
+      console.log("Submitting project data:", projectData);
+      
       if (editingProject) {
         // Update existing project
         const { error } = await supabase
@@ -254,10 +256,17 @@ const AdminProjects = () => {
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating project:", error);
+          throw error;
+        }
+        
+        console.log("New project created:", newProject);
         
         // Add to local state
-        setProjects(prev => [newProject as ProjectType, ...prev]);
+        if (newProject) {
+          setProjects(prev => [newProject as ProjectType, ...prev]);
+        }
         
         toast({
           title: "Project Created",
