@@ -89,13 +89,25 @@ const AdminProfile = () => {
           
         if (error) throw error;
         
-        setProfile(data as UserProfileType);
-        setAvatarUrl(data.avatar_url || null);
+        // Create a profile with the correct type structure
+        const userProfile: UserProfileType = {
+          id: data.id,
+          email: data.email,
+          role: data.role,
+          name: data.name || undefined,
+          avatar_url: data.avatar_url || undefined,
+          bio: data.bio || undefined,
+          created_at: data.created_at,
+          updated_at: data.updated_at || undefined
+        };
+        
+        setProfile(userProfile);
+        setAvatarUrl(userProfile.avatar_url || null);
         
         // Populate form
-        profileForm.setValue("name", data.name || user.name || "");
-        profileForm.setValue("email", data.email || user.email || "");
-        profileForm.setValue("bio", data.bio || "");
+        profileForm.setValue("name", userProfile.name || user.name || "");
+        profileForm.setValue("email", userProfile.email || user.email || "");
+        profileForm.setValue("bio", userProfile.bio || "");
         
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -134,10 +146,8 @@ const AdminProfile = () => {
       // Update local state
       setProfile(prev => prev ? { ...prev, name: data.name, bio: data.bio || prev.bio } : null);
       
-      // Call auth context update if it exists
-      if (updateUserProfile) {
-        updateUserProfile({ name: data.name });
-      }
+      // Call auth context update
+      updateUserProfile({ name: data.name });
       
       toast({
         title: "Profile Updated",

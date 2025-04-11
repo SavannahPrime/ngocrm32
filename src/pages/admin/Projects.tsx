@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -98,7 +97,15 @@ const AdminProjects = () => {
           
         if (error) throw error;
         
-        setProjects(data || []);
+        if (data) {
+          // Ensure all projects have the required fields
+          const projectsWithDefaults = data.map(project => ({
+            ...project,
+            featured: project.featured ?? false,
+          })) as ProjectType[];
+          
+          setProjects(projectsWithDefaults);
+        }
       } catch (error) {
         console.error("Error fetching projects:", error);
         toast({
@@ -235,7 +242,13 @@ const AdminProjects = () => {
       setIsSubmitting(true);
       
       const projectData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        funding_goal: data.funding_goal,
+        funding_current: data.funding_current,
+        image_url: data.image_url,
+        featured: data.featured,
         start_date: data.start_date ? format(data.start_date, 'yyyy-MM-dd') : null,
         end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
         updated_at: new Date().toISOString(),
