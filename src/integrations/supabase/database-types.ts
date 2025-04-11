@@ -1,3 +1,4 @@
+
 export type TablesNames = 'events' | 'sermons' | 'tribes' | 'members' | 'leaders' | 'programs' | 'projects' | 'team_members';
 
 export interface Database {
@@ -248,40 +249,58 @@ export interface Database {
       projects: {
         Row: {
           id: string;
-          title: string;
+          title: string | null;
+          name: string;
           description: string;
           status: string | null;
+          location: string;
+          budget: number;
+          progress: number;
           funding_goal: number | null;
           funding_current: number | null;
+          gallery: string[] | null;
           image_url: string | null;
           start_date: string | null;
           end_date: string | null;
+          featured: boolean | null;
           created_at: string | null;
           updated_at: string | null;
         };
         Insert: {
           id?: string;
-          title: string;
+          title?: string | null;
+          name: string;
           description: string;
           status?: string | null;
+          location: string;
+          budget: number;
+          progress?: number;
           funding_goal?: number | null;
           funding_current?: number | null;
+          gallery?: string[] | null;
           image_url?: string | null;
           start_date?: string | null;
           end_date?: string | null;
+          featured?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
         Update: {
           id?: string;
-          title?: string;
+          title?: string | null;
+          name?: string;
           description?: string;
           status?: string | null;
+          location?: string;
+          budget?: number;
+          progress?: number;
           funding_goal?: number | null;
           funding_current?: number | null;
+          gallery?: string[] | null;
           image_url?: string | null;
           start_date?: string | null;
           end_date?: string | null;
+          featured?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
         };

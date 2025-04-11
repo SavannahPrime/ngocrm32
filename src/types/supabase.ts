@@ -1,4 +1,3 @@
-
 // Define types based on your Supabase tables structure
 export interface MemberType {
   id: string;
@@ -81,7 +80,7 @@ export interface TribeType {
 
 export interface ProjectType {
   id: string;
-  title: string;
+  title: string | null;
   description: string;
   status: string;
   funding_goal: number;
@@ -92,20 +91,20 @@ export interface ProjectType {
   featured: boolean;
   created_at: string;
   updated_at?: string;
-  name?: string;
-  location?: string;
+  name: string;
+  location: string;
   gallery?: string[] | null;
-  budget?: number;
-  progress?: number;
+  budget: number;
+  progress: number;
 }
 
 export interface UserProfileType {
   id: string;
   email: string;
   role: string;
-  name?: string | null;
-  avatar_url?: string | null;
-  bio?: string | null;
+  name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
   created_at: string;
   updated_at?: string;
 }
