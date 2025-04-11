@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -25,7 +24,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Initialize auth state from localStorage on component mount
   useEffect(() => {
     const storedUser = localStorage.getItem("churchAdmin");
     if (storedUser) {
@@ -39,12 +37,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
-  // In a real app, this would validate against a backend
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Mock authentication for demo
-      // In production, replace with actual authentication API
       if (email === "pastor@globalcathedral.org" && password === "admin123") {
         const adminUser: AdminUser = {
           id: "1",
@@ -90,7 +85,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  // Add updateUserProfile function
   const updateUserProfile = (data: Partial<AdminUser>) => {
     if (!user) return;
     
