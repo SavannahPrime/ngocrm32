@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectType } from "@/types/supabase";
@@ -249,7 +250,6 @@ const AdminProjects = () => {
           .insert({
             ...projectData,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           })
           .select()
           .single();

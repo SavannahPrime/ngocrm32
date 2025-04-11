@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,8 +80,12 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
           const processedProjects = (projectsData || []).map(project => ({
             id: project.id,
             title: project.title || project.name || "",
+            name: project.name,
             description: project.description || "",
             status: project.status || "active",
+            location: project.location,
+            budget: project.budget,
+            progress: project.progress || 0,
             funding_goal: project.funding_goal || project.budget || 0,
             funding_current: project.funding_current || 0,
             image_url: project.image_url,
@@ -91,11 +94,7 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
             featured: project.featured ?? false,
             created_at: project.created_at,
             updated_at: project.updated_at,
-            name: project.name,
-            location: project.location,
             gallery: project.gallery,
-            budget: project.budget,
-            progress: project.progress
           })) as ProjectType[];
           
           setProjects(processedProjects);
