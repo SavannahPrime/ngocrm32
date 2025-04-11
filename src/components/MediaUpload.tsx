@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Upload, Link, Image as ImageIcon, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isYouTubeUrl, isGoogleDriveUrl, getYouTubeEmbedUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface MediaUploadProps {
   type: "image" | "video";
@@ -58,11 +57,19 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     if (selectedFile) {
       // Check if file type matches the expected type
       if (type === "image" && !selectedFile.type.startsWith("image/")) {
-        toast.error("Please select an image file");
+        toast({
+          title: "Error",
+          description: "Please select an image file",
+          variant: "destructive"
+        });
         return;
       }
       if (type === "video" && !selectedFile.type.startsWith("video/")) {
-        toast.error("Please select a video file");
+        toast({
+          title: "Error",
+          description: "Please select a video file",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -95,11 +102,18 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       
       onChange(publicUrl);
       setUrlInput(publicUrl);
-      toast.success("File uploaded successfully");
+      toast({
+        title: "Success",
+        description: "File uploaded successfully"
+      });
       setIsOpen(false);
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast.error("Failed to upload file. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setUploading(false);
     }
@@ -114,7 +128,11 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       onChange(urlInput);
       setIsOpen(false);
     } catch (e) {
-      toast.error("Please enter a valid URL");
+      toast({
+        title: "Error",
+        description: "Please enter a valid URL",
+        variant: "destructive"
+      });
     }
   };
 

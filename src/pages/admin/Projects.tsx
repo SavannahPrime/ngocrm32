@@ -1,260 +1,197 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { ProjectType } from "@/types/supabase";
+import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { 
+  Card, CardContent, CardHeader, CardTitle, CardDescription 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage 
+} from "@/components/ui/form";
+import { 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+} from "@/components/ui/select";
+import { MediaUpload } from "@/components/MediaUpload";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ImageIcon, Edit, Trash2, Loader2, Plus, CheckCircle2, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { ProjectType } from "@/types/supabase";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, Search, Plus, PlusCircle, Trash, FileEdit, Calendar as CalendarIcon2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Form schema
-const projectSchema = z.object({
-  title: z.string().min(2, "Title must be at least 2 characters"),
+const formSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   status: z.string(),
-  funding_goal: z.coerce.number().min(0, "Funding goal must be a positive number"),
-  funding_current: z.coerce.number().min(0, "Current funding must be a positive number"),
-  image_url: z.string().nullable(),
+  funding_goal: z.coerce.number().min(0, "Funding goal cannot be negative"),
+  funding_current: z.coerce.number().min(0, "Current funding cannot be negative"),
   start_date: z.date().optional(),
   end_date: z.date().optional(),
+  image_url: z.string().optional(),
   featured: z.boolean().default(false),
 });
 
-type ProjectFormValues = z.infer<typeof projectSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 const AdminProjects = () => {
-  const { toast } = useToast();
   const [projects, setProjects] = useState<ProjectType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingProject, setEditingProject] = useState<ProjectType | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filteredProjects, setFilteredProjects] = useState<ProjectType[]>([]);
+  const [editingProject, setEditingProject] = useState<ProjectType | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
-  // Form setup
-  const form = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectSchema),
+  // Initialize form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
       status: "active",
       funding_goal: 0,
       funding_current: 0,
-      image_url: null,
+      image_url: "",
       featured: false,
     },
   });
 
   // Fetch projects
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setIsLoading(true);
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
-        
-        if (data) {
-          // Ensure all projects have the required fields
-          const projectsWithDefaults = data.map(project => ({
-            ...project,
-            featured: project.featured ?? false,
-            title: project.title || project.name || "",
-            description: project.description || "",
-            status: project.status || "active",
-            funding_goal: project.funding_goal || project.budget || 0,
-            funding_current: project.funding_current || 0,
-          })) as ProjectType[];
-          
-          console.log("Fetched projects:", projectsWithDefaults);
-          setProjects(projectsWithDefaults);
-        }
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load projects. Please try again.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchProjects();
-  }, [toast]);
+  }, []);
 
-  // Filter projects
-  const filteredProjects = projects.filter(project => {
-    const matchesStatus = !filterStatus || project.status === filterStatus;
-    const matchesSearch = !searchQuery || 
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter projects when search query changes
+  useEffect(() => {
+    if (searchQuery === "") {
+      setFilteredProjects(projects);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredProjects(
+        projects.filter(
+          project =>
+            project.title.toLowerCase().includes(query) ||
+            project.description.toLowerCase().includes(query) ||
+            project.status.toLowerCase().includes(query)
+        )
+      );
+    }
+  }, [searchQuery, projects]);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        // Normalize project data to match our ProjectType interface
+        const projectsWithDefaults = data.map(project => ({
+          id: project.id,
+          title: project.title || project.name || "",
+          description: project.description || "",
+          status: project.status || "active",
+          funding_goal: project.funding_goal || project.budget || 0,
+          funding_current: project.funding_current || 0,
+          image_url: project.image_url,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          featured: project.featured ?? false,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          name: project.name,
+          location: project.location,
+          gallery: project.gallery,
+          budget: project.budget,
+          progress: project.progress
+        })) as ProjectType[];
+        
+        console.log("Fetched projects:", projectsWithDefaults);
+        setProjects(projectsWithDefaults);
+        setFilteredProjects(projectsWithDefaults);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load projects. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEditForm = (project: ProjectType) => {
+    setEditingProject(project);
     
-    return matchesStatus && matchesSearch;
-  });
+    // Set form values
+    form.setValue("title", project.title);
+    form.setValue("description", project.description);
+    form.setValue("status", project.status);
+    form.setValue("funding_goal", project.funding_goal);
+    form.setValue("funding_current", project.funding_current);
+    form.setValue("image_url", project.image_url || "");
+    form.setValue("featured", project.featured);
+    
+    if (project.start_date) {
+      form.setValue("start_date", new Date(project.start_date));
+    }
+    
+    if (project.end_date) {
+      form.setValue("end_date", new Date(project.end_date));
+    }
+    
+    setIsFormOpen(true);
+  };
 
-  // Handle add/edit dialog
-  const handleAddProject = () => {
+  const openNewForm = () => {
     setEditingProject(null);
-    setImagePreview(null);
     form.reset({
       title: "",
       description: "",
       status: "active",
       funding_goal: 0,
       funding_current: 0,
-      image_url: null,
+      image_url: "",
       featured: false,
     });
-    setIsDialogOpen(true);
+    setIsFormOpen(true);
   };
 
-  const handleEditProject = (project: ProjectType) => {
-    setEditingProject(project);
-    setImagePreview(project.image_url);
-    
-    form.reset({
-      title: project.title,
-      description: project.description,
-      status: project.status,
-      funding_goal: project.funding_goal,
-      funding_current: project.funding_current,
-      image_url: project.image_url,
-      featured: project.featured,
-      start_date: project.start_date ? new Date(project.start_date) : undefined,
-      end_date: project.end_date ? new Date(project.end_date) : undefined,
-    });
-    
-    setIsDialogOpen(true);
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingProject(null);
   };
 
-  // Handle image upload
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) return;
-    
+  const onSubmit = async (data: FormValues) => {
     try {
-      setIsUploading(true);
-      setUploadProgress(0);
+      setLoading(true);
       
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `projects/${fileName}`;
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(progressInterval);
-            return 95;
-          }
-          return prev + 5;
-        });
-      }, 100);
-      
-      // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('media')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-        
-      clearInterval(progressInterval);
-      
-      if (error) throw error;
-      
-      // Get public URL for the file
-      const { data: urlData } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-        
-      // Set the image URL in the form
-      form.setValue('image_url', urlData.publicUrl);
-      setUploadProgress(100);
-      
-      // Success message
-      toast({
-        title: "Image Uploaded",
-        description: "The image has been successfully uploaded.",
-      });
-      
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      toast({
-        variant: "destructive",
-        title: "Upload Failed",
-        description: "Failed to upload image. Please try again.",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Handle form submission
-  const onSubmit = async (data: ProjectFormValues) => {
-    try {
-      setIsSubmitting(true);
-      
+      // Prepare project data
       const projectData = {
         title: data.title,
         description: data.description,
         status: data.status,
         funding_goal: data.funding_goal,
         funding_current: data.funding_current,
-        image_url: data.image_url,
+        image_url: data.image_url || null,
         featured: data.featured,
         start_date: data.start_date ? format(data.start_date, 'yyyy-MM-dd') : null,
         end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
@@ -283,7 +220,7 @@ const AdminProjects = () => {
         
         toast({
           title: "Project Updated",
-          description: "The project has been successfully updated.",
+          description: "The project has been updated successfully.",
         });
       } else {
         // Create new project
@@ -299,19 +236,16 @@ const AdminProjects = () => {
           
         if (error) throw error;
         
-        // Update local state
+        // Add to local state
         setProjects(prev => [newProject as ProjectType, ...prev]);
         
         toast({
           title: "Project Created",
-          description: "The new project has been successfully created.",
+          description: "The new project has been created successfully.",
         });
       }
       
-      // Close dialog and reset form
-      setIsDialogOpen(false);
-      form.reset();
-      
+      closeForm();
     } catch (error) {
       console.error("Error saving project:", error);
       toast({
@@ -320,14 +254,17 @@ const AdminProjects = () => {
         description: "Failed to save project. Please try again.",
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  // Handle project deletion
-  const handleDeleteProject = async (id: string) => {
+  const deleteProject = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+      return;
+    }
+    
     try {
-      setConfirmDelete(id);
+      setLoading(true);
       
       const { error } = await supabase
         .from('projects')
@@ -341,9 +278,8 @@ const AdminProjects = () => {
       
       toast({
         title: "Project Deleted",
-        description: "The project has been successfully deleted.",
+        description: "The project has been deleted successfully.",
       });
-      
     } catch (error) {
       console.error("Error deleting project:", error);
       toast({
@@ -352,518 +288,396 @@ const AdminProjects = () => {
         description: "Failed to delete project. Please try again.",
       });
     } finally {
-      setConfirmDelete(null);
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch(status.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'planned':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'on hold':
+        return 'bg-orange-100 text-orange-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="text-gray-500">Manage your organization's projects</p>
+          <h1 className="text-3xl font-bold">Projects Management</h1>
+          <p className="text-muted-foreground">Create and manage community projects</p>
         </div>
-        
-        <Button 
-          onClick={handleAddProject}
-          className="bg-ngo-primary hover:bg-ngo-primary/90"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Project
+        <Button onClick={openNewForm} className="flex items-center">
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add New Project
         </Button>
       </div>
-      
-      {/* Filters */}
+
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-1/3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search projects..."
+            className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
-        <Select
-          value={filterStatus || ""}
-          onValueChange={(value) => setFilterStatus(value || null)}
-        >
-          <SelectTrigger className="w-full md:w-[180px]">
+        <Select defaultValue="all">
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="planned">Planned</SelectItem>
+            <SelectItem value="on hold">On Hold</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
-        
-        <Button 
-          variant="outline" 
-          onClick={() => {
-            setFilterStatus(null);
-            setSearchQuery("");
-          }}
-          className="md:ml-auto"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Reset Filters
-        </Button>
       </div>
 
-      {/* Projects Table */}
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-8 w-8 animate-spin text-ngo-primary" />
-            <span>Loading projects...</span>
-          </div>
-        </div>
-      ) : filteredProjects.length > 0 ? (
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Funding</TableHead>
-                <TableHead>Featured</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-                        {project.image_url ? (
-                          <img 
-                            src={project.image_url} 
-                            alt={project.title} 
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <ImageIcon className="h-5 w-5 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium">{project.title}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Created: {format(new Date(project.created_at), 'MMM d, yyyy')}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={project.status} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="text-sm">
-                        ${project.funding_current.toLocaleString()} / ${project.funding_goal.toLocaleString()}
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-ngo-primary h-2 rounded-full" 
-                          style={{ 
-                            width: `${Math.min(100, (project.funding_current / project.funding_goal) * 100)}%` 
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {project.featured ? (
-                      <Badge className="bg-green-500">Featured</Badge>
-                    ) : (
-                      <span className="text-gray-500 text-sm">No</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditProject(project)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteProject(project.id)}
-                        disabled={confirmDelete === project.id}
-                      >
-                        {confirmDelete === project.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ngo-primary"></div>
         </div>
       ) : (
-        <div className="bg-gray-50 rounded-md p-8 text-center">
-          <div className="flex flex-col items-center justify-center space-y-3">
-            <div className="rounded-full bg-gray-100 p-3">
-              <ImageIcon className="h-6 w-6 text-gray-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((project) => (
+              <Card key={project.id} className="overflow-hidden">
+                {project.image_url && (
+                  <div className="aspect-video overflow-hidden">
+                    <img 
+                      src={project.image_url} 
+                      alt={project.title} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(project.status)}`}>
+                          {project.status}
+                        </span>
+                        {project.featured && (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => openEditForm(project)}
+                      >
+                        <FileEdit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => deleteProject(project.id)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {project.description}
+                  </p>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Funding</span>
+                      <span>${project.funding_current.toLocaleString()} / ${project.funding_goal.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-ngo-primary rounded-full"
+                        style={{ width: `${Math.min(100, (project.funding_current / project.funding_goal) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground pt-1">
+                    <div className="flex items-center">
+                      <CalendarIcon2 className="h-3 w-3 mr-1" />
+                      <span>
+                        {project.start_date 
+                          ? `${format(new Date(project.start_date), "MMM d, yyyy")}${project.end_date ? ` - ${format(new Date(project.end_date), "MMM d, yyyy")}` : ""}` 
+                          : "No dates specified"}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full py-12 text-center">
+              <p className="text-muted-foreground">No projects found. Try changing your search criteria or create a new project.</p>
             </div>
-            <h3 className="font-medium">No projects found</h3>
-            <p className="text-sm text-gray-500">
-              {searchQuery || filterStatus
-                ? "Try adjusting your search filters"
-                : "Get started by creating a new project"}
-            </p>
-            <Button 
-              className="mt-2"
-              onClick={handleAddProject}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Project
-            </Button>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Add/Edit Project Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Project Form Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
-            <DialogDescription>
-              {editingProject
-                ? "Update the details of this project"
-                : "Enter the details for the new project"}
-            </DialogDescription>
+            <DialogTitle>{editingProject ? "Edit Project" : "Create New Project"}</DialogTitle>
           </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Clean Water Initiative" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe the project and its goals..."
-                        className="min-h-[120px]"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="py-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="status"
+                  name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Project Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
-                  name="featured"
+                  name="description"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Featured Project</FormLabel>
-                        <FormDescription>
-                          Display this project on the homepage
-                        </FormDescription>
-                      </div>
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                        <Textarea 
+                          {...field} 
+                          rows={4}
+                          placeholder="Describe the project, its goals, and its impact..."
                         />
                       </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="funding_goal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Funding Goal</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="10000" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Target amount needed for the project
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="funding_current"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Funding</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Amount already raised for this project
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Start Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>End Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="image_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project Image</FormLabel>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="col-span-1 md:col-span-2">
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              field.onChange(e.target.value);
-                              setImagePreview(e.target.value);
-                            }}
-                            placeholder="https://example.com/image.jpg"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enter a URL or upload an image
-                        </FormDescription>
-                        <FormMessage />
-                      </div>
-                      
-                      <div className="relative">
-                        <input
-                          type="file"
-                          id="image-upload"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageUpload}
-                          disabled={isUploading}
-                        />
-                        <label 
-                          htmlFor="image-upload"
-                          className="w-full cursor-pointer bg-muted hover:bg-muted/80 flex items-center justify-center rounded-md border border-dashed p-3 text-sm"
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
                         >
-                          {isUploading ? (
-                            <div className="flex flex-col items-center">
-                              <Loader2 className="h-6 w-6 animate-spin text-ngo-primary mb-1" />
-                              <span className="text-xs">{uploadProgress}%</span>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center">
-                              <ImageIcon className="h-6 w-6 mb-1 text-gray-500" />
-                              <span className="text-xs">Upload</span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-                    
-                    {/* Image Preview */}
-                    {imagePreview && (
-                      <div className="mt-4">
-                        <div className="border rounded-md overflow-hidden h-48">
-                          <img
-                            src={imagePreview}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                            onError={() => setImagePreview(null)}
-                          />
-                        </div>
-                      </div>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="planned">Planned</SelectItem>
+                            <SelectItem value="on hold">On Hold</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter className="pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  className="bg-ngo-primary hover:bg-ngo-primary/90"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {editingProject ? "Updating..." : "Creating..."}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      {editingProject ? "Update Project" : "Create Project"}
-                    </>
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="featured"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                          <FormLabel>Featured Project</FormLabel>
+                          <FormDescription>
+                            Display this project on the homepage
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="funding_goal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Funding Goal ($)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={100} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="funding_current"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Current Funding ($)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={100} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Start Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="end_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>End Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="image_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Image</FormLabel>
+                      <FormControl>
+                        <MediaUpload
+                          type="image"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Upload an image that represents this project
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                />
+
+                <div className="flex justify-between pt-4">
+                  <Button type="button" variant="outline" onClick={closeForm}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Saving..." : (editingProject ? "Update Project" : "Create Project")}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
   );
 };
 
-// Helper component for status badges
-const StatusBadge = ({ status }: { status: string }) => {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return <Badge className="bg-green-500">Active</Badge>;
-    case 'completed':
-      return <Badge className="bg-blue-500">Completed</Badge>;
-    case 'pending':
-      return <Badge className="bg-yellow-500">Pending</Badge>;
-    case 'cancelled':
-      return <Badge className="bg-gray-500">Cancelled</Badge>;
-    default:
-      return <Badge className="bg-gray-500">{status}</Badge>;
-  }
-};
+// Helper function for className concatenation (cn)
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 export default AdminProjects;

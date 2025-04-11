@@ -77,15 +77,25 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (projectsError) {
           console.error("Error fetching projects:", projectsError);
         } else {
-          // Ensure projects have all required fields with defaults
+          // Normalize project data to match our ProjectType interface
           const processedProjects = (projectsData || []).map(project => ({
-            ...project,
-            featured: project.featured ?? false,
+            id: project.id,
             title: project.title || project.name || "",
             description: project.description || "",
             status: project.status || "active",
             funding_goal: project.funding_goal || project.budget || 0,
             funding_current: project.funding_current || 0,
+            image_url: project.image_url,
+            start_date: project.start_date,
+            end_date: project.end_date,
+            featured: project.featured ?? false,
+            created_at: project.created_at,
+            updated_at: project.updated_at,
+            name: project.name,
+            location: project.location,
+            gallery: project.gallery,
+            budget: project.budget,
+            progress: project.progress
           })) as ProjectType[];
           
           setProjects(processedProjects);
@@ -224,7 +234,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Hook for using the NGO context
 export const useNGO = () => {
   const context = useContext(NGOContext);
   if (context === undefined) {
