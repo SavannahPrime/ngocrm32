@@ -212,7 +212,6 @@ export interface Database {
           }
         ];
       };
-      // Add new table types
       programs: {
         Row: {
           id: string;
@@ -400,6 +399,9 @@ export interface Database {
           id: string;
           role: string;
           updated_at: string | null;
+          name: string | null;
+          bio: string | null;
+          avatar_url: string | null;
         };
         Insert: {
           created_at?: string | null;
@@ -407,6 +409,9 @@ export interface Database {
           id: string;
           role?: string;
           updated_at?: string | null;
+          name?: string | null;
+          bio?: string | null;
+          avatar_url?: string | null;
         };
         Update: {
           created_at?: string | null;
@@ -414,6 +419,9 @@ export interface Database {
           id?: string;
           role?: string;
           updated_at?: string | null;
+          name?: string | null;
+          bio?: string | null;
+          avatar_url?: string | null;
         };
         Relationships: [];
       };
