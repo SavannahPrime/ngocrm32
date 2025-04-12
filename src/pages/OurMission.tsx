@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -79,7 +80,7 @@ const OurMission = () => {
         <p className="text-gray-700 max-w-3xl mx-auto text-lg">
           To empower and advocate for youth, PWDs (Persons with Disabilities), adolescent men and women, 
           young mothers, and vulnerable groups by promoting gender equity and equality, mental health awareness, 
-          GBV (Gender-Based Violence) prevention, and climate action. ICI strives to create sustainable solutions 
+          GBV (Gender-Based Violence) prevention, and climate action. Impact for Change Initiative (ICI) strives to create sustainable solutions 
           that foster social inclusion, economic empowerment, and environmental responsibility.
         </p>
       </div>
