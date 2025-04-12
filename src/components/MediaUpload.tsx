@@ -97,9 +97,9 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       
       console.log("Uploading file to path:", filePath);
       
-      // Upload file to Supabase Storage
+      // Upload file to Supabase Storage (blog-assets bucket)
       const { data, error } = await supabase.storage
-        .from("media-library")
+        .from("blog-assets")
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false
@@ -115,7 +115,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       
       // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
-        .from("media-library")
+        .from("blog-assets")
         .getPublicUrl(filePath);
       
       console.log("Public URL obtained:", publicUrl);
@@ -126,7 +126,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
         type: type,
         size: file.size,
         url: publicUrl,
-        uploaded_by: user?.id || "anonymous"
+        uploaded_by: user?.id || null
       });
 
       if (insertError) {
