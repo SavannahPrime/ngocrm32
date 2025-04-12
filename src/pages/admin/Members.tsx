@@ -6,34 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download, Users, UserPlus, Calendar, PieChart as PieChartIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-
-interface Volunteer {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  birth_date: string | null;
-  address: string | null;
-  join_date: string | null;
-  is_active: boolean;
-}
-
-interface VolunteerStats {
-  totalVolunteers: number;
-  activeVolunteers: number;
-  inactiveVolunteers: number;
-  newThisMonth: number;
-  newThisYear: number;
-}
+import { useNGO } from "@/contexts/NGOContext";
+import { format, parseISO } from "date-fns";
 
 const AdminMembers = () => {
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [filteredVolunteers, setFilteredVolunteers] = useState<Volunteer[]>([]);
+  const { members, refreshData } = useNGO();
+  const [filteredVolunteers, setFilteredVolunteers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<VolunteerStats>({
+  const [stats, setStats] = useState({
     totalVolunteers: 0,
     activeVolunteers: 0,
     inactiveVolunteers: 0,
@@ -42,16 +23,16 @@ const AdminMembers = () => {
   });
 
   useEffect(() => {
-    fetchVolunteers();
+    refreshData().then(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      setFilteredVolunteers(volunteers);
+      setFilteredVolunteers(members);
     } else {
       const query = searchQuery.toLowerCase();
       setFilteredVolunteers(
-        volunteers.filter(
+        members.filter(
           volunteer =>
             volunteer.name.toLowerCase().includes(query) ||
             (volunteer.email && volunteer.email.toLowerCase().includes(query)) ||
@@ -59,29 +40,13 @@ const AdminMembers = () => {
         )
       );
     }
-  }, [searchQuery, volunteers]);
+  }, [searchQuery, members]);
 
-  const fetchVolunteers = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .order('join_date', { ascending: false });
+  useEffect(() => {
+    calculateStats(members);
+  }, [members]);
 
-      if (error) throw error;
-
-      setVolunteers(data || []);
-      setFilteredVolunteers(data || []);
-      calculateStats(data || []);
-    } catch (error) {
-      console.error("Error fetching volunteers:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateStats = (volunteerData: Volunteer[]) => {
+  const calculateStats = (volunteerData) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
@@ -91,14 +56,22 @@ const AdminMembers = () => {
 
     const newThisMonth = volunteerData.filter(vol => {
       if (!vol.join_date) return false;
-      const joinDate = new Date(vol.join_date);
-      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+      try {
+        const joinDate = parseISO(vol.join_date);
+        return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+      } catch (e) {
+        return false;
+      }
     }).length;
 
     const newThisYear = volunteerData.filter(vol => {
       if (!vol.join_date) return false;
-      const joinDate = new Date(vol.join_date);
-      return joinDate.getFullYear() === currentYear;
+      try {
+        const joinDate = parseISO(vol.join_date);
+        return joinDate.getFullYear() === currentYear;
+      } catch (e) {
+        return false;
+      }
     }).length;
 
     setStats({
@@ -121,7 +94,7 @@ const AdminMembers = () => {
         volunteer.email || 'N/A',
         volunteer.phone || 'N/A',
         volunteer.address || 'N/A',
-        volunteer.join_date ? format(new Date(volunteer.join_date), 'yyyy-MM-dd') : 'N/A',
+        volunteer.join_date ? format(parseISO(volunteer.join_date), 'yyyy-MM-dd') : 'N/A',
         volunteer.is_active ? 'Active' : 'Inactive'
       ];
       csvRows.push(row);
@@ -140,17 +113,21 @@ const AdminMembers = () => {
     document.body.removeChild(link);
   };
 
-  // Monthly volunteer sign-up data (example - you would generate this from real data)
+  // Monthly volunteer sign-up data from actual members data
   const getMonthlySignups = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthCounts = new Array(12).fill(0);
     
-    volunteers.forEach(volunteer => {
+    members.forEach(volunteer => {
       if (volunteer.join_date) {
-        const joinDate = new Date(volunteer.join_date);
-        const month = joinDate.getMonth();
-        if (joinDate.getFullYear() === new Date().getFullYear()) {
-          monthCounts[month]++;
+        try {
+          const joinDate = parseISO(volunteer.join_date);
+          const month = joinDate.getMonth();
+          if (joinDate.getFullYear() === new Date().getFullYear()) {
+            monthCounts[month]++;
+          }
+        } catch (e) {
+          // Skip invalid dates
         }
       }
     });
@@ -343,7 +320,7 @@ const AdminMembers = () => {
                         <TableCell>{volunteer.phone || "—"}</TableCell>
                         <TableCell>
                           {volunteer.join_date 
-                            ? format(new Date(volunteer.join_date), "MMM d, yyyy") 
+                            ? format(parseISO(volunteer.join_date), "MMM d, yyyy") 
                             : "—"}
                         </TableCell>
                         <TableCell>

@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,10 +11,12 @@ interface NGOContextType {
   projects: ProjectType[];
   events: EventType[];
   addMember: (member: Partial<MemberType>) => Promise<boolean>;
+  addEvent: (event: Partial<EventType>) => Promise<boolean>;
   getFeaturedProjects: () => ProjectType[];
   getFeaturedEvents: () => EventType[];
   getFeaturedBlogPosts: () => SermonType[];
   isLoading: boolean;
+  refreshData: () => Promise<void>;
 }
 
 const NGOContext = createContext<NGOContextType | undefined>(undefined);
@@ -129,6 +132,46 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     fetchData();
+
+    // Subscribe to realtime changes for members table
+    const membersChannel = supabase
+      .channel('public:members')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'members' }, 
+        (payload) => {
+          console.log('New member added:', payload);
+          setMembers(currentMembers => [...currentMembers, payload.new as MemberType]);
+          if (payload.new.is_active) {
+            setVolunteers(currentVols => [...currentVols, payload.new as MemberType]);
+          }
+          toast({
+            title: "New Volunteer",
+            description: `${payload.new.name} has registered as a volunteer.`,
+          });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to realtime changes for events table
+    const eventsChannel = supabase
+      .channel('public:events')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'events' }, 
+        (payload) => {
+          console.log('New event added:', payload);
+          setEvents(currentEvents => [...currentEvents, payload.new as EventType]);
+          toast({
+            title: "New Event",
+            description: `Event "${payload.new.title}" has been created.`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(membersChannel);
+      supabase.removeChannel(eventsChannel);
+    };
   }, []);
 
   const addMember = async (member: Partial<MemberType>): Promise<boolean> => {
@@ -168,7 +211,7 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
       
       toast({
         title: "Success",
-        description: "New member added successfully.",
+        description: "New volunteer added successfully.",
       });
       
       return true;
@@ -177,7 +220,58 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add new member. Please try again.",
+        description: "Failed to add new volunteer. Please try again.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addEvent = async (event: Partial<EventType>): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      
+      if (!event.title) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Event title is required.",
+        });
+        return false;
+      }
+      
+      const { data, error } = await supabase
+        .from('events')
+        .insert({
+          title: event.title,
+          description: event.description || "",
+          date: event.date || new Date().toISOString().split('T')[0],
+          time: event.time || "12:00",
+          location: event.location || "To be announced",
+          image_url: event.image_url || null,
+          featured: event.featured || false
+        })
+        .select();
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setEvents(prev => [...prev, data[0] as EventType]);
+      }
+      
+      toast({
+        title: "Success",
+        description: "New event created successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create new event. Please try again.",
       });
       return false;
     } finally {
@@ -197,6 +291,10 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
     return [];
   };
 
+  const refreshData = async () => {
+    return fetchData();
+  };
+
   const value = {
     members,
     volunteers,
@@ -204,10 +302,12 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
     projects,
     events,
     addMember,
+    addEvent,
     getFeaturedProjects,
     getFeaturedEvents,
     getFeaturedBlogPosts,
-    isLoading
+    isLoading,
+    refreshData
   };
 
   return (
