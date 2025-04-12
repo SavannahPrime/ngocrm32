@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Upload, Link, Image as ImageIcon, Video } from "lucide-react";
+import { Upload, Link, Image as ImageIcon, Video, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isYouTubeUrl, isGoogleDriveUrl, getYouTubeEmbedUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MediaUploadProps {
   type: "image" | "video";
@@ -23,7 +24,9 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Update URL input when value prop changes
   useEffect(() => {
@@ -55,6 +58,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
+    setUploadError(null);
     
     if (selectedFile) {
       // Check if file type matches the expected type
@@ -84,6 +88,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     
     try {
       setUploading(true);
+      setUploadError(null);
       
       // Generate a unique file name to prevent conflicts
       const fileExt = file.name.split(".").pop();
@@ -94,7 +99,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
-        .from("blog-assets")
+        .from("media-library")
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false
@@ -102,6 +107,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
         
       if (error) {
         console.error("Storage upload error:", error);
+        setUploadError("Failed to upload file. Please try again.");
         throw error;
       }
       
@@ -109,10 +115,24 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       
       // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
-        .from("blog-assets")
+        .from("media-library")
         .getPublicUrl(filePath);
       
       console.log("Public URL obtained:", publicUrl);
+      
+      // Store file metadata in media_library table
+      const { error: insertError } = await supabase.from("media_library").insert({
+        file_name: file.name,
+        type: type,
+        size: file.size,
+        url: publicUrl,
+        uploaded_by: user?.id || "anonymous"
+      });
+
+      if (insertError) {
+        console.error("Error recording file metadata:", insertError);
+        // Continue anyway since the file upload was successful
+      }
       
       onChange(publicUrl);
       setUrlInput(publicUrl);
@@ -165,6 +185,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     } else {
       setFile(null);
     }
+    setUploadError(null);
   };
 
   return (
@@ -206,6 +227,141 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                   <Button variant="outline" size="sm">Change</Button>
                 </SheetTrigger>
                 {/* Sheet content below */}
+                <SheetContent className="sm:max-w-md">
+                  <SheetHeader>
+                    <SheetTitle>Add {type === "image" ? "Image" : "Video"}</SheetTitle>
+                    <SheetDescription>
+                      Upload a file or enter a URL for your {type === "image" ? "image" : "video"}.
+                      {type === "video" && " You can also use YouTube or Google Drive links."}
+                    </SheetDescription>
+                  </SheetHeader>
+                  
+                  <div className="py-6">
+                    <Tabs 
+                      defaultValue={activeTab} 
+                      onValueChange={handleTabChange}
+                      className="w-full"
+                    >
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="url">URL</TabsTrigger>
+                        <TabsTrigger value="upload">Upload</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="url" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="url">Enter {type === "image" ? "image" : "video"} URL</Label>
+                          <Input
+                            id="url"
+                            type="text"
+                            placeholder={`Enter ${type === "image" ? "image" : "video"} URL`}
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                          />
+                          {type === "video" && (
+                            <p className="text-xs text-gray-500">
+                              You can use direct video URLs, YouTube, or Google Drive links.
+                            </p>
+                          )}
+                        </div>
+                        
+                        {preview && (
+                          <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                            {type === "image" ? (
+                              <img 
+                                src={preview} 
+                                alt="Preview" 
+                                className="w-full h-full object-contain" 
+                              />
+                            ) : (
+                              isYouTubeUrl(urlInput) || isGoogleDriveUrl(urlInput) ? (
+                                <iframe 
+                                  src={preview} 
+                                  className="w-full h-full" 
+                                  allowFullScreen
+                                  title="Video preview"
+                                  frameBorder="0"
+                                />
+                              ) : (
+                                <video 
+                                  src={preview} 
+                                  controls 
+                                  className="w-full h-full object-contain"
+                                />
+                              )
+                            )}
+                          </div>
+                        )}
+                        
+                        <Button 
+                          onClick={handleUrlSubmit} 
+                          className="w-full"
+                          disabled={!urlInput}
+                        >
+                          <Link className="mr-2 h-4 w-4" />
+                          Use URL
+                        </Button>
+                      </TabsContent>
+                      
+                      <TabsContent value="upload" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="upload">
+                            Upload {type === "image" ? "image" : "video"}
+                          </Label>
+                          <Input
+                            id="upload"
+                            type="file"
+                            accept={type === "image" ? "image/*" : "video/*"}
+                            onChange={handleFileChange}
+                            className="cursor-pointer"
+                          />
+                        </div>
+                        
+                        {uploadError && (
+                          <div className="text-red-500 text-sm flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {uploadError}
+                          </div>
+                        )}
+                        
+                        {preview && (
+                          <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                            {type === "image" ? (
+                              <img 
+                                src={preview} 
+                                alt="Preview" 
+                                className="w-full h-full object-contain" 
+                              />
+                            ) : (
+                              <video 
+                                src={preview} 
+                                controls 
+                                className="w-full h-full object-contain"
+                              />
+                            )}
+                          </div>
+                        )}
+                        
+                        <Button 
+                          onClick={handleUpload} 
+                          className="w-full"
+                          disabled={!file || uploading}
+                        >
+                          {uploading ? (
+                            <>
+                              <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload
+                            </>
+                          )}
+                        </Button>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </SheetContent>
               </Sheet>
               <Button variant="outline" size="sm" onClick={handleRemove}>Remove</Button>
             </div>
@@ -223,65 +379,109 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
               <span>Add {type === "image" ? "Image" : "Video"}</span>
             </Button>
           </SheetTrigger>
-          {/* Sheet content below */}
-        </Sheet>
-      )}
-
-      {/* Common Sheet Content for both states */}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Add {type === "image" ? "Image" : "Video"}</SheetTitle>
-            <SheetDescription>
-              Upload a file or enter a URL for your {type === "image" ? "image" : "video"}.
-              {type === "video" && " You can also use YouTube or Google Drive links."}
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="py-6">
-            <Tabs 
-              defaultValue={activeTab} 
-              onValueChange={handleTabChange}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="url">URL</TabsTrigger>
-                <TabsTrigger value="upload">Upload</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="url" className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="url">Enter {type === "image" ? "image" : "video"} URL</Label>
-                  <Input
-                    id="url"
-                    type="text"
-                    placeholder={`Enter ${type === "image" ? "image" : "video"} URL`}
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                  />
-                  {type === "video" && (
-                    <p className="text-xs text-gray-500">
-                      You can use direct video URLs, YouTube, or Google Drive links.
-                    </p>
-                  )}
-                </div>
+          <SheetContent className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>Add {type === "image" ? "Image" : "Video"}</SheetTitle>
+              <SheetDescription>
+                Upload a file or enter a URL for your {type === "image" ? "image" : "video"}.
+                {type === "video" && " You can also use YouTube or Google Drive links."}
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="py-6">
+              <Tabs 
+                defaultValue={activeTab} 
+                onValueChange={handleTabChange}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="url">URL</TabsTrigger>
+                  <TabsTrigger value="upload">Upload</TabsTrigger>
+                </TabsList>
                 
-                {preview && (
-                  <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-                    {type === "image" ? (
-                      <img 
-                        src={preview} 
-                        alt="Preview" 
-                        className="w-full h-full object-contain" 
-                      />
-                    ) : (
-                      isYouTubeUrl(urlInput) || isGoogleDriveUrl(urlInput) ? (
-                        <iframe 
+                <TabsContent value="url" className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="url">Enter {type === "image" ? "image" : "video"} URL</Label>
+                    <Input
+                      id="url"
+                      type="text"
+                      placeholder={`Enter ${type === "image" ? "image" : "video"} URL`}
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                    />
+                    {type === "video" && (
+                      <p className="text-xs text-gray-500">
+                        You can use direct video URLs, YouTube, or Google Drive links.
+                      </p>
+                    )}
+                  </div>
+                  
+                  {preview && (
+                    <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                      {type === "image" ? (
+                        <img 
                           src={preview} 
-                          className="w-full h-full" 
-                          allowFullScreen
-                          title="Video preview"
-                          frameBorder="0"
+                          alt="Preview" 
+                          className="w-full h-full object-contain" 
+                        />
+                      ) : (
+                        isYouTubeUrl(urlInput) || isGoogleDriveUrl(urlInput) ? (
+                          <iframe 
+                            src={preview} 
+                            className="w-full h-full" 
+                            allowFullScreen
+                            title="Video preview"
+                            frameBorder="0"
+                          />
+                        ) : (
+                          <video 
+                            src={preview} 
+                            controls 
+                            className="w-full h-full object-contain"
+                          />
+                        )
+                      )}
+                    </div>
+                  )}
+                  
+                  <Button 
+                    onClick={handleUrlSubmit} 
+                    className="w-full"
+                    disabled={!urlInput}
+                  >
+                    <Link className="mr-2 h-4 w-4" />
+                    Use URL
+                  </Button>
+                </TabsContent>
+                
+                <TabsContent value="upload" className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="upload">
+                      Upload {type === "image" ? "image" : "video"}
+                    </Label>
+                    <Input
+                      id="upload"
+                      type="file"
+                      accept={type === "image" ? "image/*" : "video/*"}
+                      onChange={handleFileChange}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                  
+                  {uploadError && (
+                    <div className="text-red-500 text-sm flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {uploadError}
+                    </div>
+                  )}
+                  
+                  {preview && (
+                    <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                      {type === "image" ? (
+                        <img 
+                          src={preview} 
+                          alt="Preview" 
+                          className="w-full h-full object-contain" 
                         />
                       ) : (
                         <video 
@@ -289,75 +489,33 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                           controls 
                           className="w-full h-full object-contain"
                         />
-                      )
-                    )}
-                  </div>
-                )}
-                
-                <Button 
-                  onClick={handleUrlSubmit} 
-                  className="w-full"
-                  disabled={!urlInput}
-                >
-                  <Link className="mr-2 h-4 w-4" />
-                  Use URL
-                </Button>
-              </TabsContent>
-              
-              <TabsContent value="upload" className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="upload">
-                    Upload {type === "image" ? "image" : "video"}
-                  </Label>
-                  <Input
-                    id="upload"
-                    type="file"
-                    accept={type === "image" ? "image/*" : "video/*"}
-                    onChange={handleFileChange}
-                    className="cursor-pointer"
-                  />
-                </div>
-                
-                {preview && (
-                  <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-                    {type === "image" ? (
-                      <img 
-                        src={preview} 
-                        alt="Preview" 
-                        className="w-full h-full object-contain" 
-                      />
-                    ) : (
-                      <video 
-                        src={preview} 
-                        controls 
-                        className="w-full h-full object-contain"
-                      />
-                    )}
-                  </div>
-                )}
-                
-                <Button 
-                  onClick={handleUpload} 
-                  className="w-full"
-                  disabled={!file || uploading}
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload
-                    </>
+                      )}
+                    </div>
                   )}
-                </Button>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </SheetContent>
-      </Sheet>
+                  
+                  <Button 
+                    onClick={handleUpload} 
+                    className="w-full"
+                    disabled={!file || uploading}
+                  >
+                    {uploading ? (
+                      <>
+                        <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 };
