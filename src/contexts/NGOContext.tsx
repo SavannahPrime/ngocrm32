@@ -3,7 +3,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberType, SermonType, EventType, LeaderType, ProjectType } from "@/types/supabase";
 
-// Define context types
 interface NGOContextType {
   members: MemberType[];
   volunteers: MemberType[];
@@ -17,10 +16,8 @@ interface NGOContextType {
   isLoading: boolean;
 }
 
-// Create the context
 const NGOContext = createContext<NGOContextType | undefined>(undefined);
 
-// Provider component
 export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
   const [members, setMembers] = useState<MemberType[]>([]);
   const [volunteers, setVolunteers] = useState<MemberType[]>([]);
@@ -30,13 +27,11 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Fetch all data from Supabase
   const fetchData = async () => {
     try {
       setIsLoading(true);
       console.log("Fetching NGO data from Supabase...");
       
-      // Fetch members/volunteers
       const { data: membersData, error: membersError } = await supabase
         .from('members')
         .select('*')
@@ -47,13 +42,11 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         throw membersError;
       }
       
-      // Split into members and volunteers based on a field (you might need to adjust this logic)
       const allMembers = membersData as MemberType[] || [];
       setMembers(allMembers);
-      setVolunteers(allMembers.filter(m => m.is_active)); // Example filter
+      setVolunteers(allMembers.filter(m => m.is_active));
       console.log("Members/volunteers fetched:", allMembers ? allMembers.length : 0);
       
-      // Fetch leaders
       const { data: leadersData, error: leadersError } = await supabase
         .from('leaders')
         .select('*')
@@ -66,7 +59,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
       setLeaders(leadersData as LeaderType[] || []);
       console.log("Leaders fetched:", leadersData ? leadersData.length : 0);
       
-      // Try to fetch projects
       try {
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
@@ -76,7 +68,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (projectsError) {
           console.error("Error fetching projects:", projectsError);
         } else {
-          // Normalize project data to match our ProjectType interface
           const processedProjects = (projectsData || []).map(project => ({
             id: project.id,
             title: project.title || project.name || "",
@@ -105,7 +96,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         setProjects([]);
       }
       
-      // Try to fetch events
       try {
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
@@ -137,17 +127,14 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Load data on component mount
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Add a new member/volunteer
   const addMember = async (member: Partial<MemberType>): Promise<boolean> => {
     try {
       setIsLoading(true);
       
-      // Check if required field is present
       if (!member.name) {
         toast({
           variant: "destructive",
@@ -198,19 +185,16 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Get featured projects
   const getFeaturedProjects = (): ProjectType[] => {
     return projects.filter(project => project.featured);
   };
 
-  // Get featured events
   const getFeaturedEvents = (): EventType[] => {
     return events.filter(event => event.featured);
   };
 
-  // Get featured blog posts
   const getFeaturedBlogPosts = (): SermonType[] => {
-    return []; // This needs to be implemented based on your data model
+    return [];
   };
 
   const value = {

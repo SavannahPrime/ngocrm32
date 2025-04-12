@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectType } from "@/types/supabase";
@@ -30,7 +29,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Form schema - updated to include required fields
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -59,7 +57,6 @@ const AdminProjects = () => {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
-  // Initialize form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -77,12 +74,10 @@ const AdminProjects = () => {
     },
   });
 
-  // Fetch projects
   useEffect(() => {
     fetchProjects();
   }, []);
 
-  // Filter projects when search query changes
   useEffect(() => {
     if (searchQuery === "") {
       setFilteredProjects(projects);
@@ -110,7 +105,6 @@ const AdminProjects = () => {
       if (error) throw error;
 
       if (data) {
-        // Normalize project data to match our ProjectType interface
         const projectsWithDefaults = data.map(project => ({
           id: project.id,
           title: project.title || project.name || "",
@@ -150,7 +144,6 @@ const AdminProjects = () => {
   const openEditForm = (project: ProjectType) => {
     setEditingProject(project);
     
-    // Set form values - updated to include all fields
     form.setValue("title", project.title || "");
     form.setValue("name", project.name);
     form.setValue("description", project.description);
@@ -201,7 +194,6 @@ const AdminProjects = () => {
     try {
       setLoading(true);
       
-      // Prepare project data - updated to include all required fields
       const projectData = {
         title: data.title,
         name: data.name,
@@ -221,7 +213,6 @@ const AdminProjects = () => {
       console.log("Submitting project data:", projectData);
       
       if (editingProject) {
-        // Update existing project
         const { error } = await supabase
           .from('projects')
           .update({
@@ -232,7 +223,6 @@ const AdminProjects = () => {
           
         if (error) throw error;
         
-        // Update local state
         setProjects(prev => 
           prev.map(p => p.id === editingProject.id ? { 
             ...p, 
@@ -246,7 +236,6 @@ const AdminProjects = () => {
           description: "The project has been updated successfully.",
         });
       } else {
-        // Create new project - fixed to include all required fields
         const { data: newProject, error } = await supabase
           .from('projects')
           .insert({
@@ -263,7 +252,6 @@ const AdminProjects = () => {
         
         console.log("New project created:", newProject);
         
-        // Add to local state
         if (newProject) {
           setProjects(prev => [newProject as ProjectType, ...prev]);
         }
@@ -302,7 +290,6 @@ const AdminProjects = () => {
         
       if (error) throw error;
       
-      // Update local state
       setProjects(prev => prev.filter(p => p.id !== id));
       
       toast({
@@ -464,7 +451,6 @@ const AdminProjects = () => {
         </div>
       )}
 
-      {/* Project Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -762,7 +748,6 @@ const AdminProjects = () => {
   );
 };
 
-// Helper function for className concatenation (cn)
 function cn(...classes: any[]) {
   return classes.filter(Boolean).join(" ");
 }
