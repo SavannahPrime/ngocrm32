@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   Leaf,
   Brain,
-  GenderFemale,
   UserCheck
 } from "lucide-react";
 
@@ -26,7 +24,7 @@ const OurMission = () => {
     {
       title: "Gender Advocacy",
       description: "Promoting gender equality, supporting survivors of Gender-Based Violence (GBV), and fostering communities that support women's rights.",
-      icon: <GenderFemale className="h-8 w-8 text-ngo-primary" />,
+      icon: <UserCheck className="h-8 w-8 text-ngo-primary" />,
     },
     {
       title: "Mental Health Awareness",
@@ -140,7 +138,7 @@ const OurMission = () => {
           
           <div className="bg-white p-6 rounded-lg shadow-md text-center">
             <div className="bg-ngo-light rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-              <GenderFemale className="h-8 w-8 text-ngo-primary" />
+              <UserCheck className="h-8 w-8 text-ngo-primary" />
             </div>
             <h3 className="text-xl font-bold mb-3 text-ngo-dark">Equality</h3>
             <p className="text-gray-700">
