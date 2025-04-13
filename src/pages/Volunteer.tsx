@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
+import { useNGO } from "@/contexts/NGOContext";
 import {
   Form,
   FormControl,
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 // Form schema validation
 const formSchema = z.object({
@@ -70,6 +71,7 @@ const hearAboutOptions = [
 
 const Volunteer = () => {
   const { toast } = useToast();
+  const { addMember } = useNGO();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
@@ -95,18 +97,44 @@ const Volunteer = () => {
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log("Volunteer application submitted:", data);
-    
-    toast({
-      title: "Application Submitted!",
-      description: "Thank you for your interest in volunteering with us. We'll be in touch soon.",
-    });
-    
-    form.reset();
-    setIsSubmitting(false);
+    try {
+      // Prepare member data for insertion
+      const volunteerData = {
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        phone: data.phone,
+        address: `${data.address}, ${data.city}, ${data.state} ${data.zipCode}`,
+        birth_date: null,
+        is_active: true,
+        is_volunteer: true,
+        join_date: new Date().toISOString().split('T')[0],
+        volunteer_interests: data.interests,
+      };
+
+      // Use Supabase directly for more control
+      const { data: insertedData, error } = await supabase
+        .from('members')
+        .insert(volunteerData)
+        .select();
+
+      if (error) throw error;
+
+      toast({
+        title: "Volunteer Application Submitted!",
+        description: "Thank you for your interest in volunteering with us.",
+      });
+
+      form.reset();
+    } catch (error) {
+      console.error("Volunteer registration error:", error);
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: "There was an issue submitting your application. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
