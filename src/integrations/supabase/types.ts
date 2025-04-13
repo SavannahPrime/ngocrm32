@@ -176,11 +176,13 @@ export type Database = {
           event_name: string | null
           id: string
           is_active: boolean | null
+          is_volunteer: boolean | null
           join_date: string | null
           name: string
           phone: string | null
           tribe_id: string | null
           updated_at: string | null
+          volunteer_interests: string[] | null
         }
         Insert: {
           address?: string | null
@@ -191,11 +193,13 @@ export type Database = {
           event_name?: string | null
           id?: string
           is_active?: boolean | null
+          is_volunteer?: boolean | null
           join_date?: string | null
           name: string
           phone?: string | null
           tribe_id?: string | null
           updated_at?: string | null
+          volunteer_interests?: string[] | null
         }
         Update: {
           address?: string | null
@@ -206,11 +210,13 @@ export type Database = {
           event_name?: string | null
           id?: string
           is_active?: boolean | null
+          is_volunteer?: boolean | null
           join_date?: string | null
           name?: string
           phone?: string | null
           tribe_id?: string | null
           updated_at?: string | null
+          volunteer_interests?: string[] | null
         }
         Relationships: [
           {
