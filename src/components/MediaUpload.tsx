@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ interface MediaUploadProps {
   onChange?: (url: string) => void;
 }
 
-const MediaUpload = ({ 
+export const MediaUpload = ({ 
   onUploadComplete, 
   uploadType = "image", 
   className = "", 
@@ -111,18 +112,15 @@ const MediaUpload = ({
       
       console.log("Uploading file to path:", filePath);
       
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const blogAssetsBucket = buckets?.find(bucket => bucket.name === "blog-assets");
+      // Check if bucket exists
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
-      if (!blogAssetsBucket) {
-        console.log("Blog assets bucket doesn't exist. Please create it in the Supabase dashboard.");
-        toast({
-          title: "Storage Error",
-          description: "Storage bucket not configured properly. Please contact the administrator.",
-          variant: "destructive"
-        });
-        throw new Error("Storage bucket not found");
+      if (bucketsError) {
+        console.error("Error listing buckets:", bucketsError);
+        throw new Error("Could not access storage buckets");
       }
+      
+      console.log("Available buckets:", buckets);
       
       const { data, error } = await supabase.storage
         .from("blog-assets")
@@ -133,7 +131,7 @@ const MediaUpload = ({
         
       if (error) {
         console.error("Storage upload error:", error);
-        setUploadError("Failed to upload file. Please try again.");
+        setUploadError(`Failed to upload file: ${error.message}`);
         throw error;
       }
       
@@ -145,18 +143,22 @@ const MediaUpload = ({
       
       console.log("Public URL obtained:", publicUrl);
       
-      const { error: insertError } = await supabase
-        .from("media_library")
-        .insert({
-          file_name: file.name,
-          type: actualType,
-          size: file.size,
-          url: publicUrl,
-          uploaded_by: user?.id || null
-        });
+      // Record in media_library table
+      if (user?.id) {
+        const { error: insertError } = await supabase
+          .from("media_library")
+          .insert({
+            file_name: file.name,
+            type: actualType,
+            size: file.size,
+            url: publicUrl,
+            uploaded_by: user.id
+          });
 
-      if (insertError) {
-        console.error("Error recording file metadata:", insertError);
+        if (insertError) {
+          console.error("Error recording file metadata:", insertError);
+          // Continue even if this fails
+        }
       }
       
       handleValueChange(publicUrl);
@@ -170,7 +172,9 @@ const MediaUpload = ({
       console.error("Error uploading file:", error);
       toast({
         title: "Error",
-        description: "Failed to upload file. Please try again.",
+        description: typeof error === 'object' && error !== null && 'message' in error 
+          ? `Upload failed: ${(error as Error).message}` 
+          : "Failed to upload file. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -542,5 +546,4 @@ const MediaUpload = ({
   );
 };
 
-export { MediaUpload };
 export default MediaUpload;

@@ -82,15 +82,15 @@ const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-start">
                 <MapPin className="w-5 h-5 mr-2 mt-0.5" />
-                <span>Kahawa Wendani</span>
+                <span>Office Location: Kahawa Wendani</span>
               </li>
               <li className="flex items-center">
                 <Phone className="w-5 h-5 mr-2" />
-                <span>0798293822</span>
+                <span>Phone: 0798293822</span>
               </li>
               <li className="flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
-                <span>ici.kenya@initiative.org</span>
+                <span>Email: ici.kenya@initiative.org</span>
               </li>
             </ul>
           </div>
