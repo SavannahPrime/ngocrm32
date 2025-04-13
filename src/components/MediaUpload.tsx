@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,7 +120,7 @@ export const MediaUpload = ({
       
       console.log("Uploading file to path:", filePath);
       
-      // Check if bucket exists
+      // Make sure blog-assets bucket exists
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
       if (bucketsError) {
@@ -129,8 +128,15 @@ export const MediaUpload = ({
         throw new Error("Could not access storage buckets");
       }
       
+      const bucketExists = buckets.some(bucket => bucket.name === 'blog-assets');
+      if (!bucketExists) {
+        console.error("blog-assets bucket does not exist");
+        throw new Error("Storage bucket does not exist");
+      }
+      
       console.log("Available buckets:", buckets);
       
+      // Upload file without specifying owner field
       const { data, error } = await supabase.storage
         .from("blog-assets")
         .upload(filePath, file, {
@@ -154,19 +160,25 @@ export const MediaUpload = ({
       
       // Record in media_library table
       if (user?.id) {
-        const { error: insertError } = await supabase
-          .from("media_library")
-          .insert({
-            file_name: file.name,
-            type: actualType,
-            size: file.size,
-            url: publicUrl,
-            uploaded_by: user.id
-          });
+        // Add to media library if needed
+        try {
+          const { error: insertError } = await supabase
+            .from("media_library")
+            .insert({
+              file_name: file.name,
+              type: actualType,
+              size: file.size,
+              url: publicUrl,
+              uploaded_by: user.id
+            });
 
-        if (insertError) {
-          console.error("Error recording file metadata:", insertError);
-          // Continue even if this fails
+          if (insertError) {
+            console.warn("Error recording file metadata, but upload was successful:", insertError);
+            // Continue even if this fails - we prioritize the user getting their file
+          }
+        } catch (mediaError) {
+          console.warn("Error adding to media library (non-critical):", mediaError);
+          // Continue since the upload succeeded
         }
       }
       
