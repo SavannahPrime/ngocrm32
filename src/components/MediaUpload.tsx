@@ -100,7 +100,16 @@ export const MediaUpload = ({
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || !user) {
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to upload files",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
     
     try {
       setUploading(true);
