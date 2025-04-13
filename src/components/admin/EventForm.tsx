@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import MediaUpload from "@/components/MediaUpload";
+import { MediaUpload } from "@/components/MediaUpload";
 
 const EventForm = ({ onClose }: { onClose: () => void }) => {
   const { addEvent, isLoading } = useNGO();

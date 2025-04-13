@@ -18,10 +18,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'X-Client-Info': 'Impact for Change Initiative'
     }
-  },
-  // Set storage configuration to ensure uploads work properly
-  storage: {
-    retryLimit: 3,
-    multipart: true
   }
 });

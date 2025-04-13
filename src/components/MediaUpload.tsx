@@ -12,12 +12,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface MediaUploadProps {
-  type: "image" | "video";
-  value: string;
-  onChange: (url: string) => void;
+  onUploadComplete?: (url: string) => void;
+  uploadType?: "image" | "video";
+  className?: string;
+  type?: "image" | "video";
+  value?: string;
+  onChange?: (url: string) => void;
 }
 
-export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
+// Make this component work with both the old API (onUploadComplete) and new API (onChange)
+const MediaUpload = ({ 
+  onUploadComplete, 
+  uploadType = "image", 
+  className = "", 
+  type = "image", 
+  value = "", 
+  onChange 
+}: MediaUploadProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("url");
   const [urlInput, setUrlInput] = useState(value || "");
@@ -27,6 +38,16 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // For compatibility, use the appropriate props
+  const actualType = type || uploadType;
+  const handleValueChange = (url: string) => {
+    if (onChange) {
+      onChange(url);
+    } else if (onUploadComplete) {
+      onUploadComplete(url);
+    }
+  };
 
   // Update URL input when value prop changes
   useEffect(() => {
@@ -40,7 +61,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       setPreview(objectUrl);
       return () => URL.revokeObjectURL(objectUrl);
     } else if (urlInput) {
-      if (type === "video") {
+      if (actualType === "video") {
         if (isYouTubeUrl(urlInput)) {
           setPreview(getYouTubeEmbedUrl(urlInput) || "");
         } else if (isGoogleDriveUrl(urlInput)) {
@@ -54,7 +75,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     } else {
       setPreview(null);
     }
-  }, [file, urlInput, type]);
+  }, [file, urlInput, actualType]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
@@ -62,7 +83,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     
     if (selectedFile) {
       // Check if file type matches the expected type
-      if (type === "image" && !selectedFile.type.startsWith("image/")) {
+      if (actualType === "image" && !selectedFile.type.startsWith("image/")) {
         toast({
           title: "Error",
           description: "Please select an image file",
@@ -70,7 +91,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
         });
         return;
       }
-      if (type === "video" && !selectedFile.type.startsWith("video/")) {
+      if (actualType === "video" && !selectedFile.type.startsWith("video/")) {
         toast({
           title: "Error",
           description: "Please select a video file",
@@ -93,7 +114,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       // Generate a unique file name to prevent conflicts
       const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${type === "image" ? "images" : "videos"}/${fileName}`;
+      const filePath = `${actualType === "image" ? "images" : "videos"}/${fileName}`;
       
       console.log("Uploading file to path:", filePath);
       
@@ -121,20 +142,22 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
       console.log("Public URL obtained:", publicUrl);
       
       // Store file metadata in media_library table
-      const { error: insertError } = await supabase.from("media_library").insert({
-        file_name: file.name,
-        type: type,
-        size: file.size,
-        url: publicUrl,
-        uploaded_by: user?.id || null
-      });
+      const { error: insertError } = await supabase
+        .from("media_library")
+        .insert({
+          file_name: file.name,
+          type: actualType,
+          size: file.size,
+          url: publicUrl,
+          uploaded_by: user?.id || null
+        });
 
       if (insertError) {
         console.error("Error recording file metadata:", insertError);
         // Continue anyway since the file upload was successful
       }
       
-      onChange(publicUrl);
+      handleValueChange(publicUrl);
       setUrlInput(publicUrl);
       toast({
         title: "Success",
@@ -159,7 +182,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     // Validate URL format
     try {
       new URL(urlInput);
-      onChange(urlInput);
+      handleValueChange(urlInput);
       setIsOpen(false);
     } catch (e) {
       toast({
@@ -171,7 +194,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
   };
 
   const handleRemove = () => {
-    onChange("");
+    handleValueChange("");
     setUrlInput("");
     setFile(null);
     setPreview(null);
@@ -189,11 +212,11 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${className}`}>
       {value ? (
         <div className="border rounded-md p-3 space-y-3">
           <div className="aspect-video relative bg-gray-100 rounded-md overflow-hidden">
-            {type === "image" ? (
+            {actualType === "image" ? (
               <img 
                 src={value} 
                 alt="Preview" 
@@ -229,10 +252,10 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                 {/* Sheet content below */}
                 <SheetContent className="sm:max-w-md">
                   <SheetHeader>
-                    <SheetTitle>Add {type === "image" ? "Image" : "Video"}</SheetTitle>
+                    <SheetTitle>Add {actualType === "image" ? "Image" : "Video"}</SheetTitle>
                     <SheetDescription>
-                      Upload a file or enter a URL for your {type === "image" ? "image" : "video"}.
-                      {type === "video" && " You can also use YouTube or Google Drive links."}
+                      Upload a file or enter a URL for your {actualType === "image" ? "image" : "video"}.
+                      {actualType === "video" && " You can also use YouTube or Google Drive links."}
                     </SheetDescription>
                   </SheetHeader>
                   
@@ -249,15 +272,15 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                       
                       <TabsContent value="url" className="space-y-4 pt-4">
                         <div className="space-y-2">
-                          <Label htmlFor="url">Enter {type === "image" ? "image" : "video"} URL</Label>
+                          <Label htmlFor="url">Enter {actualType === "image" ? "image" : "video"} URL</Label>
                           <Input
                             id="url"
                             type="text"
-                            placeholder={`Enter ${type === "image" ? "image" : "video"} URL`}
+                            placeholder={`Enter ${actualType === "image" ? "image" : "video"} URL`}
                             value={urlInput}
                             onChange={(e) => setUrlInput(e.target.value)}
                           />
-                          {type === "video" && (
+                          {actualType === "video" && (
                             <p className="text-xs text-gray-500">
                               You can use direct video URLs, YouTube, or Google Drive links.
                             </p>
@@ -266,7 +289,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                         
                         {preview && (
                           <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-                            {type === "image" ? (
+                            {actualType === "image" ? (
                               <img 
                                 src={preview} 
                                 alt="Preview" 
@@ -305,12 +328,12 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                       <TabsContent value="upload" className="space-y-4 pt-4">
                         <div className="space-y-2">
                           <Label htmlFor="upload">
-                            Upload {type === "image" ? "image" : "video"}
+                            Upload {actualType === "image" ? "image" : "video"}
                           </Label>
                           <Input
                             id="upload"
                             type="file"
-                            accept={type === "image" ? "image/*" : "video/*"}
+                            accept={actualType === "image" ? "image/*" : "video/*"}
                             onChange={handleFileChange}
                             className="cursor-pointer"
                           />
@@ -325,7 +348,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                         
                         {preview && (
                           <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-                            {type === "image" ? (
+                            {actualType === "image" ? (
                               <img 
                                 src={preview} 
                                 alt="Preview" 
@@ -371,20 +394,20 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" className="w-full h-32 flex flex-col gap-2">
-              {type === "image" ? (
+              {actualType === "image" ? (
                 <ImageIcon className="h-6 w-6" />
               ) : (
                 <Video className="h-6 w-6" />
               )}
-              <span>Add {type === "image" ? "Image" : "Video"}</span>
+              <span>Add {actualType === "image" ? "Image" : "Video"}</span>
             </Button>
           </SheetTrigger>
           <SheetContent className="sm:max-w-md">
             <SheetHeader>
-              <SheetTitle>Add {type === "image" ? "Image" : "Video"}</SheetTitle>
+              <SheetTitle>Add {actualType === "image" ? "Image" : "Video"}</SheetTitle>
               <SheetDescription>
-                Upload a file or enter a URL for your {type === "image" ? "image" : "video"}.
-                {type === "video" && " You can also use YouTube or Google Drive links."}
+                Upload a file or enter a URL for your {actualType === "image" ? "image" : "video"}.
+                {actualType === "video" && " You can also use YouTube or Google Drive links."}
               </SheetDescription>
             </SheetHeader>
             
@@ -401,15 +424,15 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                 
                 <TabsContent value="url" className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="url">Enter {type === "image" ? "image" : "video"} URL</Label>
+                    <Label htmlFor="url">Enter {actualType === "image" ? "image" : "video"} URL</Label>
                     <Input
                       id="url"
                       type="text"
-                      placeholder={`Enter ${type === "image" ? "image" : "video"} URL`}
+                      placeholder={`Enter ${actualType === "image" ? "image" : "video"} URL`}
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                     />
-                    {type === "video" && (
+                    {actualType === "video" && (
                       <p className="text-xs text-gray-500">
                         You can use direct video URLs, YouTube, or Google Drive links.
                       </p>
@@ -418,7 +441,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                   
                   {preview && (
                     <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-                      {type === "image" ? (
+                      {actualType === "image" ? (
                         <img 
                           src={preview} 
                           alt="Preview" 
@@ -457,12 +480,12 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                 <TabsContent value="upload" className="space-y-4 pt-4">
                   <div className="space-y-2">
                     <Label htmlFor="upload">
-                      Upload {type === "image" ? "image" : "video"}
+                      Upload {actualType === "image" ? "image" : "video"}
                     </Label>
                     <Input
                       id="upload"
                       type="file"
-                      accept={type === "image" ? "image/*" : "video/*"}
+                      accept={actualType === "image" ? "image/*" : "video/*"}
                       onChange={handleFileChange}
                       className="cursor-pointer"
                     />
@@ -477,7 +500,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
                   
                   {preview && (
                     <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-                      {type === "image" ? (
+                      {actualType === "image" ? (
                         <img 
                           src={preview} 
                           alt="Preview" 
@@ -519,3 +542,7 @@ export const MediaUpload = ({ type, value, onChange }: MediaUploadProps) => {
     </div>
   );
 };
+
+// Export the component as both a named export and a default export for backward compatibility
+export { MediaUpload };
+export default MediaUpload;
