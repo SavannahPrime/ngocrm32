@@ -11,7 +11,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* NGO Info */}
           <div>
-            <h3 className="text-xl font-heading font-bold mb-4">HopeHarbor</h3>
+            <h3 className="text-xl font-heading font-bold mb-4">Impact for Change Initiative</h3>
             <p className="mb-4">
               Empowering communities through sustainable development and education.
               Together, we can build a better future for all.
@@ -78,19 +78,19 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-heading font-bold mb-4">Contact Us</h3>
+            <h3 className="text-lg font-heading font-bold mb-4">Contact Information</h3>
             <ul className="space-y-4">
               <li className="flex items-start">
                 <MapPin className="w-5 h-5 mr-2 mt-0.5" />
-                <span>123 Impact Avenue, Changemaker City, CM 12345</span>
+                <span>Kahawa Wendani</span>
               </li>
               <li className="flex items-center">
                 <Phone className="w-5 h-5 mr-2" />
-                <span>(123) 456-7890</span>
+                <span>0798293822</span>
               </li>
               <li className="flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
-                <span>info@hopeharbor.org</span>
+                <span>ici.kenya@initiative.org</span>
               </li>
             </ul>
           </div>
@@ -98,7 +98,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
           <p>
-            &copy; {currentYear} HopeHarbor NGO. All rights reserved.
+            &copy; {currentYear} Impact for Change Initiative. All rights reserved.
           </p>
         </div>
       </div>

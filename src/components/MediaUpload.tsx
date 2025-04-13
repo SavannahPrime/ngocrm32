@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Upload, Link, Image as ImageIcon, Video, AlertCircle } from "lucide-react";
+import { Upload, Link as LinkIcon, Image as ImageIcon, Video, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isYouTubeUrl, isGoogleDriveUrl, getYouTubeEmbedUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +19,6 @@ interface MediaUploadProps {
   onChange?: (url: string) => void;
 }
 
-// Make this component work with both the old API (onUploadComplete) and new API (onChange)
 const MediaUpload = ({ 
   onUploadComplete, 
   uploadType = "image", 
@@ -39,7 +37,6 @@ const MediaUpload = ({
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // For compatibility, use the appropriate props
   const actualType = type || uploadType;
   const handleValueChange = (url: string) => {
     if (onChange) {
@@ -49,12 +46,10 @@ const MediaUpload = ({
     }
   };
 
-  // Update URL input when value prop changes
   useEffect(() => {
     setUrlInput(value || "");
   }, [value]);
 
-  // Update preview when URL input or file changes
   useEffect(() => {
     if (file) {
       const objectUrl = URL.createObjectURL(file);
@@ -82,7 +77,6 @@ const MediaUpload = ({
     setUploadError(null);
     
     if (selectedFile) {
-      // Check if file type matches the expected type
       if (actualType === "image" && !selectedFile.type.startsWith("image/")) {
         toast({
           title: "Error",
@@ -111,14 +105,25 @@ const MediaUpload = ({
       setUploading(true);
       setUploadError(null);
       
-      // Generate a unique file name to prevent conflicts
       const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${actualType === "image" ? "images" : "videos"}/${fileName}`;
       
       console.log("Uploading file to path:", filePath);
       
-      // Upload file to Supabase Storage (blog-assets bucket)
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const blogAssetsBucket = buckets?.find(bucket => bucket.name === "blog-assets");
+      
+      if (!blogAssetsBucket) {
+        console.log("Blog assets bucket doesn't exist. Please create it in the Supabase dashboard.");
+        toast({
+          title: "Storage Error",
+          description: "Storage bucket not configured properly. Please contact the administrator.",
+          variant: "destructive"
+        });
+        throw new Error("Storage bucket not found");
+      }
+      
       const { data, error } = await supabase.storage
         .from("blog-assets")
         .upload(filePath, file, {
@@ -134,14 +139,12 @@ const MediaUpload = ({
       
       console.log("Upload successful, getting public URL");
       
-      // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from("blog-assets")
         .getPublicUrl(filePath);
       
       console.log("Public URL obtained:", publicUrl);
       
-      // Store file metadata in media_library table
       const { error: insertError } = await supabase
         .from("media_library")
         .insert({
@@ -154,7 +157,6 @@ const MediaUpload = ({
 
       if (insertError) {
         console.error("Error recording file metadata:", insertError);
-        // Continue anyway since the file upload was successful
       }
       
       handleValueChange(publicUrl);
@@ -179,7 +181,6 @@ const MediaUpload = ({
   const handleUrlSubmit = () => {
     if (!urlInput) return;
     
-    // Validate URL format
     try {
       new URL(urlInput);
       handleValueChange(urlInput);
@@ -202,7 +203,6 @@ const MediaUpload = ({
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Reset file and URL input when switching tabs
     if (value === "upload") {
       setUrlInput("");
     } else {
@@ -249,7 +249,6 @@ const MediaUpload = ({
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm">Change</Button>
                 </SheetTrigger>
-                {/* Sheet content below */}
                 <SheetContent className="sm:max-w-md">
                   <SheetHeader>
                     <SheetTitle>Add {actualType === "image" ? "Image" : "Video"}</SheetTitle>
@@ -320,7 +319,7 @@ const MediaUpload = ({
                           className="w-full"
                           disabled={!urlInput}
                         >
-                          <Link className="mr-2 h-4 w-4" />
+                          <LinkIcon className="mr-2 h-4 w-4" />
                           Use URL
                         </Button>
                       </TabsContent>
@@ -472,7 +471,7 @@ const MediaUpload = ({
                     className="w-full"
                     disabled={!urlInput}
                   >
-                    <Link className="mr-2 h-4 w-4" />
+                    <LinkIcon className="mr-2 h-4 w-4" />
                     Use URL
                   </Button>
                 </TabsContent>
@@ -543,6 +542,5 @@ const MediaUpload = ({
   );
 };
 
-// Export the component as both a named export and a default export for backward compatibility
 export { MediaUpload };
 export default MediaUpload;
