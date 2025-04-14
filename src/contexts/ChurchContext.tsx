@@ -43,7 +43,8 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching members:", membersError);
         throw membersError;
       }
-      setMembers(membersData as MemberType[] || []);
+      // Fix: Type assertion to handle the type mismatch
+      setMembers((membersData || []) as unknown as MemberType[]);
       
       // Fetch sermons
       const { data: sermonsData, error: sermonsError } = await supabase
@@ -55,7 +56,8 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching sermons:", sermonsError);
         throw sermonsError;
       }
-      setSermons(sermonsData as SermonType[] || []);
+      // Fix: Type assertion to handle the type mismatch
+      setSermons((sermonsData || []) as unknown as SermonType[]);
       
       // Fetch events
       const { data: eventsData, error: eventsError } = await supabase
@@ -67,7 +69,8 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching events:", eventsError);
         throw eventsError;
       }
-      setEvents(eventsData as EventType[] || []);
+      // Fix: Type assertion to handle the type mismatch
+      setEvents((eventsData || []) as unknown as EventType[]);
       
       // Fetch leaders
       const { data: leadersData, error: leadersError } = await supabase
@@ -79,7 +82,8 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching leaders:", leadersError);
         throw leadersError;
       }
-      setLeaders(leadersData as LeaderType[] || []);
+      // Fix: Type assertion to handle the type mismatch
+      setLeaders((leadersData || []) as unknown as LeaderType[]);
       
       // Fetch tribes
       const { data: tribesData, error: tribesError } = await supabase
@@ -91,7 +95,8 @@ export const ChurchProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching tribes:", tribesError);
         throw tribesError;
       }
-      setTribes(tribesData as TribeType[] || []);
+      // Fix: Type assertion to handle the type mismatch
+      setTribes((tribesData || []) as unknown as TribeType[]);
       
       console.log("Church data fetch completed");
       

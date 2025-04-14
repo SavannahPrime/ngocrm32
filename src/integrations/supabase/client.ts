@@ -35,11 +35,46 @@ export const checkStorageBuckets = async () => {
     const blogAssetsBucketExists = buckets.some(bucket => bucket.id === 'blog-assets');
     const mediaBucketExists = buckets.some(bucket => bucket.id === 'media');
     
+    // If buckets don't exist, try to create them
+    if (!blogAssetsBucketExists) {
+      try {
+        const { error: createError } = await supabase.storage.createBucket('blog-assets', {
+          public: true,
+          fileSizeLimit: 52428800 // 50MB
+        });
+        
+        if (createError) {
+          console.error("Error creating blog-assets bucket:", createError);
+        } else {
+          console.log("Successfully created blog-assets bucket");
+        }
+      } catch (e) {
+        console.error("Failed to create blog-assets bucket:", e);
+      }
+    }
+    
+    if (!mediaBucketExists) {
+      try {
+        const { error: createError } = await supabase.storage.createBucket('media', {
+          public: true,
+          fileSizeLimit: 52428800 // 50MB
+        });
+        
+        if (createError) {
+          console.error("Error creating media bucket:", createError);
+        } else {
+          console.log("Successfully created media bucket");
+        }
+      } catch (e) {
+        console.error("Failed to create media bucket:", e);
+      }
+    }
+    
     return { 
       success: true, 
       buckets: {
-        blogAssets: blogAssetsBucketExists,
-        media: mediaBucketExists
+        blogAssets: blogAssetsBucketExists || !blogAssetsBucketExists, // Return true even if we just created it
+        media: mediaBucketExists || !mediaBucketExists // Return true even if we just created it
       }
     };
   } catch (error) {

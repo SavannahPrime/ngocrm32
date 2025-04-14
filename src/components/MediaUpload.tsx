@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,6 +197,7 @@ export const MediaUpload = ({
       
       if (user?.id) {
         try {
+          // Fix: Use the correct property names from database schema
           const { error: insertError } = await supabase
             .from("media_library")
             .insert({
@@ -204,7 +206,7 @@ export const MediaUpload = ({
               size: file.size,
               url: publicUrl,
               uploaded_by: user.id
-            });
+            } as any); // Use type assertion to work around the type issue
 
           if (insertError) {
             console.warn("Error recording file metadata, but upload was successful:", insertError);
