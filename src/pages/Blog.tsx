@@ -33,20 +33,23 @@ const Blog = () => {
         const { data, error } = await supabase
           .from('sermons')
           .select('*')
-          .eq('type', 'blog')
+          .eq('type', 'blog' as any)
           .order('date', { ascending: false });
           
         if (error) throw error;
         
+        // Type assertion for safety
+        const typedData = (data || []) as unknown as SermonType[];
+        
         // Find the featured post
-        const featured = data.find(post => post.featured);
+        const featured = typedData.find(post => post.featured);
         
         if (featured) {
-          setFeaturedPost(featured as SermonType);
+          setFeaturedPost(featured);
           // Remove the featured post from the regular posts list
-          setPosts((data.filter(post => post.id !== featured.id)) as SermonType[]);
+          setPosts(typedData.filter(post => post.id !== featured.id));
         } else {
-          setPosts(data as SermonType[]);
+          setPosts(typedData);
         }
       } catch (error) {
         console.error("Error fetching blog posts:", error);

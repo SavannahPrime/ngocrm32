@@ -148,12 +148,12 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         (payload) => {
           console.log('New member added:', payload);
           setMembers(currentMembers => [...currentMembers, payload.new as unknown as MemberType]);
-          if (payload.new.is_active) {
+          if ((payload.new as any).is_active) {
             setVolunteers(currentVols => [...currentVols, payload.new as unknown as MemberType]);
           }
           toast({
             title: "New Volunteer",
-            description: `${payload.new.name} has registered as a volunteer.`,
+            description: `${(payload.new as any).name} has registered as a volunteer.`,
           });
         }
       )
@@ -169,7 +169,7 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
           setEvents(currentEvents => [...currentEvents, payload.new as unknown as EventType]);
           toast({
             title: "New Event",
-            description: `Event "${payload.new.title}" has been created.`,
+            description: `Event "${(payload.new as any).title}" has been created.`,
           });
         }
       )
@@ -203,16 +203,18 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
           birth_date: member.birth_date || null,
           address: member.address || null,
           join_date: member.join_date || new Date().toISOString(),
-          is_active: member.is_active ?? true
-        })
+          is_active: member.is_active ?? true,
+          volunteer_interests: member.volunteer_interests || []
+        } as any)
         .select();
       
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setMembers(prev => [...prev, data[0] as MemberType]);
-        if (data[0].is_active) {
-          setVolunteers(prev => [...prev, data[0] as MemberType]);
+        const newMember = data[0] as unknown as MemberType;
+        setMembers(prev => [...prev, newMember]);
+        if (newMember.is_active) {
+          setVolunteers(prev => [...prev, newMember]);
         }
       }
       
@@ -258,13 +260,14 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
           location: event.location || "To be announced",
           image_url: event.image_url || null,
           featured: event.featured || false
-        })
+        } as any)
         .select();
       
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setEvents(prev => [...prev, data[0] as EventType]);
+        const newEvent = data[0] as unknown as EventType;
+        setEvents(prev => [...prev, newEvent]);
       }
       
       toast({

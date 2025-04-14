@@ -26,12 +26,12 @@ const BlogPost = () => {
           .from('sermons')
           .select('*')
           .eq('id', id)
-          .eq('type', 'blog')
+          .eq('type', 'blog' as any)
           .maybeSingle();
           
         if (error) throw error;
         
-        setPost(data as SermonType);
+        setPost(data as unknown as SermonType);
       } catch (error) {
         console.error("Error fetching blog post:", error);
       } finally {
