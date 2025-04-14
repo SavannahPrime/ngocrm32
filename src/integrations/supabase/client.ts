@@ -15,5 +15,35 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'X-Client-Info': 'Impact for Change Initiative'
     }
+  },
+  storage: {
+    // Explicitly specify available buckets to ensure they're recognized
+    storageKey: SUPABASE_PUBLISHABLE_KEY
   }
 });
+
+// Helper function to check if buckets exist
+export const checkStorageBuckets = async () => {
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      console.error("Error listing buckets:", error);
+      return { success: false, error };
+    }
+    
+    const blogAssetsBucketExists = buckets.some(bucket => bucket.id === 'blog-assets');
+    const mediaBucketExists = buckets.some(bucket => bucket.id === 'media');
+    
+    return { 
+      success: true, 
+      buckets: {
+        blogAssets: blogAssetsBucketExists,
+        media: mediaBucketExists
+      }
+    };
+  } catch (error) {
+    console.error("Error checking buckets:", error);
+    return { success: false, error };
+  }
+};

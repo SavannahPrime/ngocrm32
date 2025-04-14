@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Upload, Link as LinkIcon, Image as ImageIcon, Video, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, checkStorageBuckets } from "@/integrations/supabase/client";
 import { isYouTubeUrl, isGoogleDriveUrl, getYouTubeEmbedUrl, getGoogleDriveEmbedUrl } from "@/types/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -99,46 +98,38 @@ export const MediaUpload = ({
     }
   };
 
-  // Function to ensure blog-assets bucket exists
-  const ensureBucketExists = async () => {
+  const verifyStorageBuckets = async () => {
     try {
-      // First check if the bucket exists
-      const { data: buckets, error } = await supabase.storage.listBuckets();
+      const { success, buckets, error } = await checkStorageBuckets();
       
-      if (error) {
-        console.error("Error listing buckets:", error);
+      if (!success || error) {
+        console.error("Error checking storage buckets:", error);
         return false;
       }
       
-      // Check if blog-assets bucket exists
-      const bucketExists = buckets.some(bucket => bucket.id === 'blog-assets');
-      
-      if (!bucketExists) {
-        console.error("Storage bucket 'blog-assets' does not exist in the database");
-        
-        // Try to create the bucket if it doesn't exist
+      if (!buckets?.blogAssets) {
         try {
+          console.log("blog-assets bucket does not exist, attempting to create it...");
           const { error: createError } = await supabase.storage.createBucket('blog-assets', {
             public: true,
             fileSizeLimit: 52428800 // 50MB
           });
           
           if (createError) {
-            console.error("Error creating bucket:", createError);
+            console.error("Error creating blog-assets bucket:", createError);
             return false;
           }
           
           console.log("Successfully created blog-assets bucket");
-          return true;
         } catch (e) {
-          console.error("Failed to create bucket:", e);
+          console.error("Failed to create blog-assets bucket:", e);
           return false;
         }
       }
       
       return true;
     } catch (error) {
-      console.error("Error in ensureBucketExists:", error);
+      console.error("Error verifying storage buckets:", error);
       return false;
     }
   };
@@ -159,14 +150,13 @@ export const MediaUpload = ({
       setUploading(true);
       setUploadError(null);
       
-      // Ensure the bucket exists before attempting to upload
-      const bucketExists = await ensureBucketExists();
+      const bucketsExist = await verifyStorageBuckets();
       
-      if (!bucketExists) {
-        setUploadError("Storage bucket 'blog-assets' does not exist and could not be created. Please contact an administrator.");
+      if (!bucketsExist) {
+        setUploadError("Storage buckets are not properly configured. Please contact an administrator.");
         toast({
           title: "Storage Error",
-          description: "The upload bucket doesn't exist in the database and could not be created automatically. Please contact an administrator.",
+          description: "The storage system isn't properly configured. Please contact an administrator.",
           variant: "destructive"
         });
         setUploading(false);
@@ -179,7 +169,6 @@ export const MediaUpload = ({
       
       console.log("Uploading file to path:", filePath);
       
-      // Upload file without specifying owner field
       const { data, error } = await supabase.storage
         .from("blog-assets")
         .upload(filePath, file, {
@@ -189,8 +178,8 @@ export const MediaUpload = ({
         
       if (error) {
         console.error("Storage upload error:", error);
-        if (error.message.includes("bucket")) {
-          setUploadError(`The upload bucket doesn't exist or is not accessible. Please contact an administrator.`);
+        if (error.message.includes("bucket") || error.message.includes("does not exist")) {
+          setUploadError(`Storage bucket issue: ${error.message}. Please contact an administrator.`);
         } else {
           setUploadError(`Failed to upload file: ${error.message}`);
         }
@@ -205,9 +194,7 @@ export const MediaUpload = ({
       
       console.log("Public URL obtained:", publicUrl);
       
-      // Record in media_library table
       if (user?.id) {
-        // Add to media library if needed
         try {
           const { error: insertError } = await supabase
             .from("media_library")
@@ -221,11 +208,9 @@ export const MediaUpload = ({
 
           if (insertError) {
             console.warn("Error recording file metadata, but upload was successful:", insertError);
-            // Continue even if this fails - we prioritize the user getting their file
           }
         } catch (mediaError) {
           console.warn("Error adding to media library (non-critical):", mediaError);
-          // Continue since the upload succeeded
         }
       }
       
