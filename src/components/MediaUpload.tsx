@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,23 @@ export const MediaUpload = ({
     }
   };
 
+  // Function to check if the blog-assets bucket exists
+  const checkBucketExists = async () => {
+    try {
+      const { data: buckets, error } = await supabase.storage.listBuckets();
+      
+      if (error) {
+        console.error("Error checking buckets:", error);
+        return false;
+      }
+      
+      return buckets.some(bucket => bucket.id === 'blog-assets');
+    } catch (error) {
+      console.error("Error in checkBucketExists:", error);
+      return false;
+    }
+  };
+
   const handleUpload = async () => {
     if (!file || !user) {
       if (!user) {
@@ -114,27 +132,24 @@ export const MediaUpload = ({
       setUploading(true);
       setUploadError(null);
       
+      // Check if the bucket exists before attempting to upload
+      const bucketExists = await checkBucketExists();
+      
+      if (!bucketExists) {
+        setUploadError("Storage bucket 'blog-assets' does not exist. Please contact an administrator.");
+        toast({
+          title: "Storage Error",
+          description: "The upload bucket doesn't exist in the database. Please contact an administrator.",
+          variant: "destructive"
+        });
+        throw new Error("Storage bucket does not exist");
+      }
+      
       const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${actualType === "image" ? "images" : "videos"}/${fileName}`;
       
       console.log("Uploading file to path:", filePath);
-      
-      // Make sure blog-assets bucket exists
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error("Error listing buckets:", bucketsError);
-        throw new Error("Could not access storage buckets");
-      }
-      
-      const bucketExists = buckets.some(bucket => bucket.name === 'blog-assets');
-      if (!bucketExists) {
-        console.error("blog-assets bucket does not exist");
-        throw new Error("Storage bucket does not exist");
-      }
-      
-      console.log("Available buckets:", buckets);
       
       // Upload file without specifying owner field
       const { data, error } = await supabase.storage
@@ -146,7 +161,11 @@ export const MediaUpload = ({
         
       if (error) {
         console.error("Storage upload error:", error);
-        setUploadError(`Failed to upload file: ${error.message}`);
+        if (error.message.includes("bucket")) {
+          setUploadError(`The upload bucket doesn't exist. Please contact an administrator.`);
+        } else {
+          setUploadError(`Failed to upload file: ${error.message}`);
+        }
         throw error;
       }
       
