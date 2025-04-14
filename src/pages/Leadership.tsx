@@ -23,7 +23,7 @@ const Leadership = () => {
         return;
       }
       
-      setTribes(data as TribeType[]);
+      setTribes((data || []) as unknown as TribeType[]);
     };
     
     fetchTribes();

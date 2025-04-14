@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -61,7 +60,7 @@ const Volunteer = () => {
           is_volunteer: true,
           join_date: new Date().toISOString(),
           is_active: true
-        })
+        } as any)
         .select();
 
       if (error) throw error;

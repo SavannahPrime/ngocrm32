@@ -45,7 +45,8 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         throw membersError;
       }
       
-      const allMembers = membersData as MemberType[] || [];
+      // Apply the correct type assertion to resolve TypeScript errors
+      const allMembers = (membersData || []) as unknown as MemberType[];
       setMembers(allMembers);
       setVolunteers(allMembers.filter(m => m.is_active));
       console.log("Members/volunteers fetched:", allMembers ? allMembers.length : 0);
@@ -59,7 +60,8 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching leaders:", leadersError);
         throw leadersError;
       }
-      setLeaders(leadersData as LeaderType[] || []);
+      // Apply the correct type assertion
+      setLeaders((leadersData || []) as unknown as LeaderType[]);
       console.log("Leaders fetched:", leadersData ? leadersData.length : 0);
       
       try {
@@ -71,7 +73,11 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (projectsError) {
           console.error("Error fetching projects:", projectsError);
         } else {
-          const processedProjects = (projectsData || []).map(project => ({
+          // First, type assert to an array we can safely process
+          const safeProjectsData = (projectsData || []) as any[];
+          
+          // Then process and map to the expected type
+          const processedProjects = safeProjectsData.map(project => ({
             id: project.id,
             title: project.title || project.name || "",
             name: project.name,
@@ -92,7 +98,7 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
           })) as ProjectType[];
           
           setProjects(processedProjects);
-          console.log("Projects fetched:", projectsData ? projectsData.length : 0);
+          console.log("Projects fetched:", safeProjectsData.length);
         }
       } catch (error) {
         console.error("Could not fetch projects:", error);
@@ -108,7 +114,8 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (eventsError) {
           console.error("Error fetching events:", eventsError);
         } else {
-          setEvents(eventsData as EventType[] || []);
+          // Apply correct type assertion
+          setEvents((eventsData || []) as unknown as EventType[]);
           console.log("Events fetched:", eventsData ? eventsData.length : 0);
         }
       } catch (error) {
@@ -140,9 +147,9 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         { event: 'INSERT', schema: 'public', table: 'members' }, 
         (payload) => {
           console.log('New member added:', payload);
-          setMembers(currentMembers => [...currentMembers, payload.new as MemberType]);
+          setMembers(currentMembers => [...currentMembers, payload.new as unknown as MemberType]);
           if (payload.new.is_active) {
-            setVolunteers(currentVols => [...currentVols, payload.new as MemberType]);
+            setVolunteers(currentVols => [...currentVols, payload.new as unknown as MemberType]);
           }
           toast({
             title: "New Volunteer",
@@ -159,7 +166,7 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         { event: 'INSERT', schema: 'public', table: 'events' }, 
         (payload) => {
           console.log('New event added:', payload);
-          setEvents(currentEvents => [...currentEvents, payload.new as EventType]);
+          setEvents(currentEvents => [...currentEvents, payload.new as unknown as EventType]);
           toast({
             title: "New Event",
             description: `Event "${payload.new.title}" has been created.`,
