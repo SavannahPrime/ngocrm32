@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +38,7 @@ export const MediaUpload = ({
   const { user } = useAuth();
 
   const actualType = type || uploadType;
+
   const handleValueChange = (url: string) => {
     if (onChange) {
       onChange(url);
@@ -108,26 +108,7 @@ export const MediaUpload = ({
         return false;
       }
       
-      if (!buckets?.blogAssets) {
-        try {
-          console.log("blog-assets bucket does not exist, attempting to create it...");
-          const { error: createError } = await supabase.storage.createBucket('blog-assets', {
-            public: true,
-            fileSizeLimit: 52428800 // 50MB
-          });
-          
-          if (createError) {
-            console.error("Error creating blog-assets bucket:", createError);
-            return false;
-          }
-          
-          console.log("Successfully created blog-assets bucket");
-        } catch (e) {
-          console.error("Failed to create blog-assets bucket:", e);
-          return false;
-        }
-      }
-      
+      console.log("Storage buckets status:", buckets);
       return true;
     } catch (error) {
       console.error("Error verifying storage buckets:", error);
@@ -169,6 +150,32 @@ export const MediaUpload = ({
       const filePath = `${actualType === "image" ? "images" : "videos"}/${fileName}`;
       
       console.log("Uploading file to path:", filePath);
+      console.log("User authenticated:", !!user);
+      console.log("User ID:", user?.id);
+      
+      console.log("File details:", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        targetBucket: actualType === "image" ? "blog-assets" : "blog-assets"
+      });
+      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      
+      console.log("Session exists:", !!session);
+      
+      if (!session) {
+        setUploadError("Authentication session is invalid. Please login again.");
+        toast({
+          title: "Authentication Error",
+          description: "Your login session has expired. Please sign in again.",
+          variant: "destructive"
+        });
+        setUploading(false);
+        return;
+      }
       
       const { data, error } = await supabase.storage
         .from("blog-assets")
@@ -181,6 +188,8 @@ export const MediaUpload = ({
         console.error("Storage upload error:", error);
         if (error.message.includes("bucket") || error.message.includes("does not exist")) {
           setUploadError(`Storage bucket issue: ${error.message}. Please contact an administrator.`);
+        } else if (error.message.includes("row-level security")) {
+          setUploadError(`Permission denied: ${error.message}. Please ensure you're logged in with the correct permissions.`);
         } else {
           setUploadError(`Failed to upload file: ${error.message}`);
         }
@@ -197,7 +206,6 @@ export const MediaUpload = ({
       
       if (user?.id) {
         try {
-          // Fix: Use the correct property names from database schema
           const { error: insertError } = await supabase
             .from("media_library")
             .insert({
@@ -206,7 +214,7 @@ export const MediaUpload = ({
               size: file.size,
               url: publicUrl,
               uploaded_by: user.id
-            } as any); // Use type assertion to work around the type issue
+            });
 
           if (insertError) {
             console.warn("Error recording file metadata, but upload was successful:", insertError);
@@ -506,21 +514,13 @@ export const MediaUpload = ({
                           className="w-full h-full object-contain" 
                         />
                       ) : (
-                        isYouTubeUrl(urlInput) || isGoogleDriveUrl(urlInput) ? (
-                          <iframe 
-                            src={preview} 
-                            className="w-full h-full" 
-                            allowFullScreen
-                            title="Video preview"
-                            frameBorder="0"
-                          />
-                        ) : (
-                          <video 
-                            src={preview} 
-                            controls 
-                            className="w-full h-full object-contain"
-                          />
-                        )
+                        <iframe 
+                          src={preview} 
+                          className="w-full h-full" 
+                          allowFullScreen
+                          title="Video preview"
+                          frameBorder="0"
+                        />
                       )}
                     </div>
                   )}

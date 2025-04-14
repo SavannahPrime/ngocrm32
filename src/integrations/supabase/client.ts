@@ -30,50 +30,40 @@ export const checkStorageBuckets = async () => {
     const blogAssetsBucketExists = buckets.some(bucket => bucket.id === 'blog-assets');
     const mediaBucketExists = buckets.some(bucket => bucket.id === 'media');
     
-    // If buckets don't exist, try to create them
-    if (!blogAssetsBucketExists) {
-      try {
-        const { error: createError } = await supabase.storage.createBucket('blog-assets', {
-          public: true,
-          fileSizeLimit: 52428800 // 50MB
-        });
-        
-        if (createError) {
-          console.error("Error creating blog-assets bucket:", createError);
-        } else {
-          console.log("Successfully created blog-assets bucket");
-        }
-      } catch (e) {
-        console.error("Failed to create blog-assets bucket:", e);
-      }
-    }
-    
-    if (!mediaBucketExists) {
-      try {
-        const { error: createError } = await supabase.storage.createBucket('media', {
-          public: true,
-          fileSizeLimit: 52428800 // 50MB
-        });
-        
-        if (createError) {
-          console.error("Error creating media bucket:", createError);
-        } else {
-          console.log("Successfully created media bucket");
-        }
-      } catch (e) {
-        console.error("Failed to create media bucket:", e);
-      }
-    }
+    // Log existing buckets
+    console.log("Available buckets:", buckets.map(b => b.id).join(", "));
     
     return { 
       success: true, 
       buckets: {
-        blogAssets: blogAssetsBucketExists || !blogAssetsBucketExists, // Return true even if we just created it
-        media: mediaBucketExists || !mediaBucketExists // Return true even if we just created it
+        blogAssets: blogAssetsBucketExists,
+        media: mediaBucketExists
       }
     };
   } catch (error) {
     console.error("Error checking buckets:", error);
     return { success: false, error };
+  }
+};
+
+// Check current authentication status
+export const checkAuthStatus = async () => {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Error checking auth status:", error);
+      return { success: false, authenticated: false, error };
+    }
+    
+    return { 
+      success: true, 
+      authenticated: !!session,
+      user: session?.user,
+      error: null
+    };
+  } catch (error) {
+    console.error("Error checking auth status:", error);
+    return { success: false, authenticated: false, error };
   }
 };
