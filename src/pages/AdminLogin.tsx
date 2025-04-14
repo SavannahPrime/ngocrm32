@@ -87,7 +87,11 @@ const AdminLogin = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="pastor@globalcathedral.org" {...field} />
+                      <Input 
+                        type="email" 
+                        placeholder="Enter your email" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -101,7 +105,11 @@ const AdminLogin = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="•••••••" {...field} />
+                      <Input 
+                        type="password" 
+                        placeholder="•••••••" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -119,20 +127,6 @@ const AdminLogin = () => {
               </div>
             </form>
           </Form>
-          
-          <div className="mt-6">
-            <div className="text-center text-sm">
-              <p className="text-gray-500">
-                For demo purposes, use:
-              </p>
-              <p className="mt-1 text-gray-700">
-                Email: pastor@globalcathedral.org
-              </p>
-              <p className="text-gray-700">
-                Password: admin123
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
