@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +44,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         throw membersError;
       }
       
-      // Apply the correct type assertion to resolve TypeScript errors
       const allMembers = (membersData || []) as unknown as MemberType[];
       setMembers(allMembers);
       setVolunteers(allMembers.filter(m => m.is_active));
@@ -60,7 +58,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error fetching leaders:", leadersError);
         throw leadersError;
       }
-      // Apply the correct type assertion
       setLeaders((leadersData || []) as unknown as LeaderType[]);
       console.log("Leaders fetched:", leadersData ? leadersData.length : 0);
       
@@ -73,10 +70,8 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (projectsError) {
           console.error("Error fetching projects:", projectsError);
         } else {
-          // First, type assert to an array we can safely process
           const safeProjectsData = (projectsData || []) as any[];
           
-          // Then process and map to the expected type
           const processedProjects = safeProjectsData.map(project => ({
             id: project.id,
             title: project.title || project.name || "",
@@ -114,7 +109,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
         if (eventsError) {
           console.error("Error fetching events:", eventsError);
         } else {
-          // Apply correct type assertion
           setEvents((eventsData || []) as unknown as EventType[]);
           console.log("Events fetched:", eventsData ? eventsData.length : 0);
         }
@@ -140,7 +134,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     fetchData();
 
-    // Subscribe to realtime changes for members table
     const membersChannel = supabase
       .channel('public:members')
       .on('postgres_changes', 
@@ -159,7 +152,6 @@ export const NGOProvider = ({ children }: { children: React.ReactNode }) => {
       )
       .subscribe();
 
-    // Subscribe to realtime changes for events table
     const eventsChannel = supabase
       .channel('public:events')
       .on('postgres_changes', 

@@ -1,4 +1,3 @@
-
 // Define types based on your Supabase tables structure
 export interface MemberType {
   id: string;
@@ -13,6 +12,8 @@ export interface MemberType {
   tribe_id: string | null;
   created_at: string;
   updated_at?: string;
+  volunteer_interests?: string[] | null;
+  is_volunteer?: boolean | null;
 }
 
 export interface SermonType {
